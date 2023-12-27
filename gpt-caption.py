@@ -77,6 +77,7 @@ def process_single_image(api_key, prompt, api_url, image_path):
     save_api_details(api_key, api_url)
     #image.save("/tmp/image_to_process.jpg")
     caption = run_openai_api(image_path, prompt, api_key, api_url)
+    print(caption)
     return caption
 
 # Updated batch processing function
@@ -87,6 +88,7 @@ def process_batch_images(api_key, prompt, api_url, image_dir):
         if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):
             image_path = os.path.join(image_dir, filename)
             caption = run_openai_api(image_path, prompt, api_key, api_url)
+            print(caption)
             # Remove original file extension and replace with '.txt'
             base_filename = os.path.splitext(image_path)[0]
             caption_filename = f"{base_filename}.txt"
