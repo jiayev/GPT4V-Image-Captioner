@@ -4,6 +4,7 @@ import requests
 import json
 import os
 import gradio as gr
+from tqdm import tqdm
 
 # Function to get the saved API key and URL
 def get_saved_api_details():
@@ -84,32 +85,35 @@ def process_single_image(api_key, prompt, api_url, image_path):
 def process_batch_images(api_key, prompt, api_url, image_dir):
     save_api_details(api_key, api_url)
     results = []
-    for filename in os.listdir(image_dir):
-        if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):
-            image_path = os.path.join(image_dir, filename)
-            caption = run_openai_api(image_path, prompt, api_key, api_url)
-            print(caption)
-            # Remove original file extension and replace with '.txt'
-            base_filename = os.path.splitext(image_path)[0]
-            caption_filename = f"{base_filename}.txt"
-            # Save the caption
-            with open(caption_filename, 'w') as file:
-                file.write(caption)
-            results.append((filename, caption_filename))
+
+    # Prepare the list of image files
+    image_files = [f for f in os.listdir(image_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif'))]
+
+    # Use tqdm to create the progress bar
+    for filename in tqdm(image_files, desc='Processing images'):
+        image_path = os.path.join(image_dir, filename)
+        caption = run_openai_api(image_path, prompt, api_key, api_url)
+        print(caption)
+        # Remove original file extension and replace with '.txt'
+        base_filename = os.path.splitext(image_path)[0]
+        caption_filename = f"{base_filename}.txt"
+        # Save the caption
+        with open(caption_filename, 'w') as file:
+            file.write(caption)
+        results.append((filename, caption_filename))
     return results
 
 saved_api_key, saved_api_url = get_saved_api_details()
 
 # Gradio interface setup
-with gr.Blocks() as demo:
+with gr.Blocks(title="GPT4V captioner") as demo:
     gr.Markdown("Image Captioning with OpenAI's GPT-4-Vision API")
-    
+    with gr.Row():
+        api_key_input = gr.Textbox(label="API Key", placeholder="Enter your OpenAI API Key here", type="password", value=saved_api_key)
+        api_url_input = gr.Textbox(label="API URL", value=saved_api_url or "https://api.openai.com/v1/chat/completions", placeholder="Enter the OpenAI API URL here")
+        
     with gr.Tab("Single Image Processing"):
         with gr.Row():
-            api_key_input = gr.Textbox(label="API Key", placeholder="Enter your OpenAI API Key here", type="password", value=saved_api_key)
-            api_url_input = gr.Textbox(label="API URL", value=saved_api_url or "https://api.openai.com/v1/chat/completions", placeholder="Enter the OpenAI API URL here")
-        with gr.Row():
-            prompt_input = gr.Textbox(label="Prompt", value="What’s in this image?", placeholder="Enter a descriptive prompt")
             image_input = gr.Image(type='filepath', label="Upload Image")
         with gr.Row():
             single_image_submit = gr.Button("Caption Single Image", variant='primary')
@@ -119,12 +123,12 @@ with gr.Blocks() as demo:
         with gr.Row():
             batch_api_key_input = gr.Textbox(label="API Key", placeholder="Enter your OpenAI API Key here", type="password", value=saved_api_key, visible=False)
             batch_api_url_input = gr.Textbox(label="API URL", value=saved_api_url or "https://api.openai.com/v1/chat/completions", placeholder="Enter the OpenAI API URL here", visible=False)
-            batch_prompt_input = gr.Textbox(label="Prompt", value="What’s in this image?", placeholder="Enter the same prompt used for single image", visible=False)
+            #batch_prompt_input = gr.Textbox(label="Prompt", value="What’s in this image?", placeholder="Enter the same prompt used for single image", visible=False)
             batch_dir_input = gr.Textbox(label="Batch Directory", placeholder="Enter the directory path containing images for batch processing")
         with gr.Row():
             batch_process_submit = gr.Button("Batch Process Images", variant='secondary')
         batch_output = gr.Textbox(label="Batch Processing Output")
-
+    prompt_input = gr.Textbox(label="Prompt", value="What’s in this image?", placeholder="Enter a descriptive prompt")
     def batch_process(api_key, api_url, prompt, batch_dir):
         process_batch_images(api_key, prompt, api_url, batch_dir) 
         return "Batch processing complete. Captions saved as '.txt' files next to images."
@@ -134,6 +138,6 @@ with gr.Blocks() as demo:
             return process_single_image(api_key, prompt, api_url, image)
 
     single_image_submit.click(caption_image, inputs=[api_key_input, api_url_input, prompt_input, image_input], outputs=single_image_output)
-    batch_process_submit.click(batch_process, inputs=[batch_api_key_input, batch_api_url_input, batch_prompt_input, batch_dir_input], outputs=batch_output)
+    batch_process_submit.click(batch_process, inputs=[batch_api_key_input, batch_api_url_input, prompt_input, batch_dir_input], outputs=batch_output)
 
 demo.launch()
