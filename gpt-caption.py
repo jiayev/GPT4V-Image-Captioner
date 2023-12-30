@@ -121,9 +121,9 @@ with gr.Blocks(title="GPT4V captioner") as demo:
     
     with gr.Tab("Batch Image Processing"):
         with gr.Row():
-            batch_api_key_input = gr.Textbox(label="API Key", placeholder="Enter your OpenAI API Key here", type="password", value=saved_api_key, visible=False)
-            batch_api_url_input = gr.Textbox(label="API URL", value=saved_api_url or "https://api.openai.com/v1/chat/completions", placeholder="Enter the OpenAI API URL here", visible=False)
-            #batch_prompt_input = gr.Textbox(label="Prompt", value="What’s in this image?", placeholder="Enter the same prompt used for single image", visible=False)
+            # batch_api_key_input = gr.Textbox(label="API Key", placeholder="Enter your OpenAI API Key here", type="password", value=saved_api_key, visible=False)
+            # batch_api_url_input = gr.Textbox(label="API URL", value=saved_api_url or "https://api.openai.com/v1/chat/completions", placeholder="Enter the OpenAI API URL here", visible=False)
+            # batch_prompt_input = gr.Textbox(label="Prompt", value="What’s in this image?", placeholder="Enter the same prompt used for single image", visible=False)
             batch_dir_input = gr.Textbox(label="Batch Directory", placeholder="Enter the directory path containing images for batch processing")
         with gr.Row():
             batch_process_submit = gr.Button("Batch Process Images", variant='secondary')
@@ -138,6 +138,6 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             return process_single_image(api_key, prompt, api_url, image)
 
     single_image_submit.click(caption_image, inputs=[api_key_input, api_url_input, prompt_input, image_input], outputs=single_image_output)
-    batch_process_submit.click(batch_process, inputs=[batch_api_key_input, batch_api_url_input, prompt_input, batch_dir_input], outputs=batch_output)
+    batch_process_submit.click(batch_process, inputs=[api_key_input, api_url_input, prompt_input, batch_dir_input], outputs=batch_output)
 
 demo.launch()
