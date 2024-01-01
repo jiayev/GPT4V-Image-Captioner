@@ -258,8 +258,8 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         outputs=batch_output
     )
 
-    gr.Markdown("### Developers: JIA, LEOSAM")
-    gr.Markdown("##### 开发人员：嘉嘉嘉嘉嘉//、LEOSAM 是只兔狲")
+    gr.Markdown("### Developers: Jiaye, LEOSAM")
+    gr.Markdown("##### 开发人员：Jiaye、LEOSAM 是只兔狲")
 
 if __name__ == "__main__":
     demo.launch()
