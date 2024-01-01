@@ -205,7 +205,10 @@ with gr.Blocks(title="GPT4V captioner") as demo:
     with gr.Row():
         api_key_input = gr.Textbox(label="API Key", placeholder="Enter your GPT-4-Vision API Key here", type="password", value=saved_api_key)
         api_url_input = gr.Textbox(label="API URL", value=saved_api_url or "https://api.openai.com/v1/chat/completions", placeholder="Enter the GPT-4-Vision API URL here")
-        
+        prompt_input = gr.Textbox(label="Prompt",
+                              value="As an AI image tagging expert, please provide precise tags for these images to enhance CLIP model's understanding of the content. Employ succinct keywords or phrases, steering clear of elaborate sentences and extraneous conjunctions. Prioritize the tags by relevance. Your tags should capture key elements such as the main subject, setting, artistic style, composition, image quality, color tone, filter, and camera specifications, and any other tags crucial for the image. When tagging photos of people, include specific details like gender, nationality, attire, actions, pose, expressions, accessories, makeup, composition type, age, etc. For other image categories, apply appropriate and common descriptive tags as well. Recognize and tag any celebrities, well-known landmark or IPs if clearly featured in the image. Your tags should be accurate, non-duplicative, and within a 20-75 word count range. These tags will use for image re-creation, so the closer the resemblance to the original image, the better the tag quality. Tags should be comma-separated. Exceptional tagging will be rewarded with $10 per image.",
+                              placeholder="Enter a descriptive prompt",
+                              lines=5)
     with gr.Tab("Single Image Processing / 单图处理"):
         with gr.Row():
             image_input = gr.Image(type='filepath', label="Upload Image / 上传图片")
@@ -217,10 +220,6 @@ with gr.Blocks(title="GPT4V captioner") as demo:
     with gr.Tab("Batch Image Processing / 批量图像处理"):
         with gr.Row():
             batch_dir_input = gr.Textbox(label="Batch Directory / 批量目录", placeholder="Enter the directory path containing images for batch processing")
-        prompt_input = gr.Textbox(label="Prompt",
-                              value="As an AI image tagging expert, please provide precise tags for these images to enhance CLIP model's understanding of the content. Employ succinct keywords or phrases, steering clear of elaborate sentences and extraneous conjunctions. Prioritize the tags by relevance. Your tags should capture key elements such as the main subject, setting, artistic style, composition, image quality, color tone, filter, and camera specifications, and any other tags crucial for the image. When tagging photos of people, include specific details like gender, nationality, attire, actions, pose, expressions, accessories, makeup, composition type, age, etc. For other image categories, apply appropriate and common descriptive tags as well. Recognize and tag any celebrities, well-known landmark or IPs if clearly featured in the image. Your tags should be accurate, non-duplicative, and within a 20-75 word count range. These tags will use for image re-creation, so the closer the resemblance to the original image, the better the tag quality. Tags should be comma-separated. Exceptional tagging will be rewarded with $10 per image.",
-                              placeholder="Enter a descriptive prompt",
-                              lines=5)
         with gr.Row():
             batch_process_submit = gr.Button("Batch Process Images / 批量处理图像", variant='primary')        
         with gr.Row():
