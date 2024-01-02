@@ -8,7 +8,7 @@ Developers: Jiaye and [LEOSAM是只兔狲](https://civitai.com/user/LEOSAM). Wel
 这是一款利用 GPT-4-vision API 为图像打标的简易工具。
 使用 Gradio 构建，部分代码由 GPT 辅助生成。
 
-![1](https://github.com/jiayev/GPT4V-Image-Captioner/assets/16369810/ef8ff10f-e032-4515-9107-ee64dd6db898)
+![2](https://github.com/jiayev/GPT4V-Image-Captioner/assets/16369810/69ef5e42-00e8-48af-bb5d-26064c1e9084)
 
 # Installation and Startup Guide
 
