@@ -38,7 +38,7 @@ call myenv\Scripts\activate
 python -m pip install --upgrade pip
 
 :: 安装必要的Python库
-pip install requests gradio tqdm
+pip install Pillow tqdm gradio requests
 
 :: 运行Python脚本（脚本名称为gpt-caption.py）
 python gpt-caption.py

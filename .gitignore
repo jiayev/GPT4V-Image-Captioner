@@ -1,1 +1,15 @@
+# 一般虚拟环境文件夹名
+venv/
+env/
+
+# 如果虚拟环境文件夹有特殊名称，直接列出
+# my_virtual_env/
+
+# 个人配置文件
 api_settings.json
+
+# MacOS 系统文件
+.DS_Store
+
+# Windows 系统文件
+Thumbs.db

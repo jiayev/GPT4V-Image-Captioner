@@ -21,7 +21,7 @@ source myenv/bin/activate
 pip install --upgrade pip
 
 # Install necessary Python libraries
-pip install requests gradio tqdm
+pip install Pillow tqdm gradio requests
 
 # Run Python script (script name is gpt-caption.py)
 python3 gpt-caption.py

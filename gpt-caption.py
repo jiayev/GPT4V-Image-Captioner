@@ -12,6 +12,9 @@ import threading
 import subprocess
 import webbrowser
 import time
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+from ImgProcessing import process_images_in_folder
 
 def unique_elements(original, addition):
     original_list = list(map(str.strip, original.split(',')))
@@ -92,11 +95,27 @@ def run_openai_api(image_path, prompt, api_key, api_url):
         "Authorization": f"Bearer {api_key}"
     }
     
-    response = requests.post(api_url, headers=headers, json=data, timeout=10)
-    
-    if response.status_code != 200:
-        return f"Error: API request failed with status {response.status_code}\n{response.text}"
+   # 配置重试策略
+    retries = Retry(total=5,
+                    backoff_factor=1,
+                    status_forcelist=[429, 500, 502, 503, 504],
+                    allowed_methods=["HEAD", "GET", "OPTIONS", "POST"])  # 更新参数名
 
+    with requests.Session() as s:
+        s.mount('https://', HTTPAdapter(max_retries=retries))
+        
+        try:
+            response = s.post(api_url, headers=headers, json=data, timeout=10)
+            response.raise_for_status()  # 如果请求失败，将抛出 HTTPError
+        except requests.exceptions.HTTPError as errh:
+            return f"HTTP Error: {errh}"
+        except requests.exceptions.ConnectionError as errc:
+            return f"Error Connecting: {errc}"
+        except requests.exceptions.Timeout as errt:
+            return f"Timeout Error: {errt}"
+        except requests.exceptions.RequestException as err:
+            return f"OOps: Something Else: {err}"
+    
     try:
         response_data = response.json()
         
@@ -161,10 +180,15 @@ def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode
             return filename, f"An unexpected error occurred while moving {filename} or {caption_filename}: {e}"
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-        futures = [executor.submit(process_image, filename, file_handling_mode) for filename in image_files]
+        futures = {}
+        for filename in image_files:
+            future = executor.submit(process_image, filename, file_handling_mode)
+            futures[future] = filename  # 将 future 和 filename 映射起来
         progress = tqdm(total=len(futures), desc="Processing images")
+        
         try:
-            for future in as_completed(futures):
+            for future in concurrent.futures.as_completed(futures):
+                filename = futures[future]  # 获取正在处理的文件名
                 if should_stop.is_set():
                     for f in futures:
                         f.cancel()
@@ -173,17 +197,21 @@ def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode
                 try:
                     result = future.result()
                 except Exception as e:
-                    result = None
-                    print(f"An exception occurred: {e}")
+                    result = (filename, f"An exception occurred: {e}")
+                    print(f"An exception occurred while processing {filename}: {e}")
                 results.append(result)
                 progress.update(1)
         finally:
             progress.close()
             executor.shutdown(wait=False)
 
+    print(f"Processing complete. Total images processed: {len(results)}")
     return results
 
+# 运行批处理
 saved_api_key, saved_api_url = get_saved_api_details()
+# 确保在这里设置正确的参数
+results = process_batch_images(saved_api_key, "Your prompt here", saved_api_url, "Your image directory here", "Your file handling mode here")
 
 def run_script(folder_path, keywords):
     keywords = keywords if keywords else "sorry,error"
@@ -211,6 +239,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                               value="As an AI image tagging expert, please provide precise tags for these images to enhance CLIP model's understanding of the content. Employ succinct keywords or phrases, steering clear of elaborate sentences and extraneous conjunctions. Prioritize the tags by relevance. Your tags should capture key elements such as the main subject, setting, artistic style, composition, image quality, color tone, filter, and camera specifications, and any other tags crucial for the image. When tagging photos of people, include specific details like gender, nationality, attire, actions, pose, expressions, accessories, makeup, composition type, age, etc. For other image categories, apply appropriate and common descriptive tags as well. Recognize and tag any celebrities, well-known landmark or IPs if clearly featured in the image. Your tags should be accurate, non-duplicative, and within a 20-75 word count range. These tags will use for image re-creation, so the closer the resemblance to the original image, the better the tag quality. Tags should be comma-separated. Exceptional tagging will be rewarded with $10 per image.",
                               placeholder="Enter a descriptive prompt",
                               lines=5)
+    
     with gr.Tab("Single Image Processing / 单图处理"):
         with gr.Row():
             image_input = gr.Image(type='filepath', label="Upload Image / 上传图片")
@@ -218,7 +247,6 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         with gr.Row():
             single_image_submit = gr.Button("Caption Single Image / 图片打标", variant='primary')
         
-    
     with gr.Tab("Batch Image Processing / 批量图像处理"):
         with gr.Row():
             batch_dir_input = gr.Textbox(label="Batch Directory / 批量目录", placeholder="Enter the directory path containing images for batch processing")
@@ -243,6 +271,31 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         
         run_button.click(fn=run_script, inputs=[folder_input, keywords_input], outputs=output_area)
 
+    with gr.Tab("Image Precompression / 图像预压缩"):
+        with gr.Row():
+            folder_path_input = gr.Textbox(
+                label="Image Folder Path / 图像文件夹路径", 
+                placeholder="Enter the folder path containing images / 输入包含图像的文件夹路径"
+            )
+            process_images_button = gr.Button("Process Images / 压缩图像")
+            
+        with gr.Row():
+            # 添加一个Markdown组件来显示警告信息
+            gr.Markdown("""
+            ⚠ **Warning / 警告**: This preprocessing will resize and compress all image files to jpg format with a total pixel count less than 1024*1024. Please make sure to backup your original files before processing / 本预处理过程将会把所有图像文件裁剪压缩至总像素小于1024*1024的jpg文件。请务必在处理前备份源文件！该过程可以缩小训练集体积，有助于加快打标速度，并缩短训练过程中的Cache latents to disk时间。
+            """)
+
+        with gr.Row():
+            image_processing_output = gr.Textbox(
+                label="Image Processing Output / 图像处理输出", 
+                lines=3
+            )
+            
+        process_images_button.click(
+            fn=process_images_in_folder, 
+            inputs=[folder_path_input], 
+            outputs=[image_processing_output]
+        )  
              
     def batch_process(api_key, api_url, prompt, batch_dir, file_handling_mode):
         process_batch_images(api_key, prompt, api_url, batch_dir, file_handling_mode) 
