@@ -10,6 +10,8 @@ import mimetypes
 import shutil
 import threading
 import subprocess
+import webbrowser
+import time
 
 def unique_elements(original, addition):
     original_list = list(map(str.strip, original.split(',')))
@@ -205,7 +207,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
     with gr.Row():
         api_key_input = gr.Textbox(label="API Key", placeholder="Enter your GPT-4-Vision API Key here", type="password", value=saved_api_key)
         api_url_input = gr.Textbox(label="API URL", value=saved_api_url or "https://api.openai.com/v1/chat/completions", placeholder="Enter the GPT-4-Vision API URL here")
-    prompt_input = gr.Textbox(label="Prompt",
+    prompt_input = gr.Textbox(label="Prompt / 打标需求",
                               value="As an AI image tagging expert, please provide precise tags for these images to enhance CLIP model's understanding of the content. Employ succinct keywords or phrases, steering clear of elaborate sentences and extraneous conjunctions. Prioritize the tags by relevance. Your tags should capture key elements such as the main subject, setting, artistic style, composition, image quality, color tone, filter, and camera specifications, and any other tags crucial for the image. When tagging photos of people, include specific details like gender, nationality, attire, actions, pose, expressions, accessories, makeup, composition type, age, etc. For other image categories, apply appropriate and common descriptive tags as well. Recognize and tag any celebrities, well-known landmark or IPs if clearly featured in the image. Your tags should be accurate, non-duplicative, and within a 20-75 word count range. These tags will use for image re-creation, so the closer the resemblance to the original image, the better the tag quality. Tags should be comma-separated. Exceptional tagging will be rewarded with $10 per image.",
                               placeholder="Enter a descriptive prompt",
                               lines=5)
@@ -225,7 +227,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         with gr.Row():
             batch_output = gr.Textbox(label="Batch Processing Output / 批量输出")
             file_handling_mode = gr.Radio(
-            choices=["overwrite/覆盖", "prepend/前置插入", "append/结尾追加", "skip/跳过"],  
+            choices=["overwrite/覆盖", "prepend/前置插入", "append/末尾追加", "skip/跳过"],  
             value="overwrite/覆盖", 
             label="If a caption file exists: / 如果已经存在打标文件: "
         )
@@ -235,7 +237,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
     
     with gr.Tab("Failed Tagging File Screening / 打标失败文件筛查"):
         folder_input = gr.Textbox(label="Folder Input / 文件夹输入", placeholder="Enter the directory path")
-        keywords_input = gr.Textbox(placeholder="Enter keywords, e.g., sorry,error / 请输入关键词，例如：sorry,error", label="Keywords (optional) / 关键词（可选）")
+        keywords_input = gr.Textbox(placeholder="Enter keywords, e.g., sorry,error / 请输入关键词，例如：sorry,error", label="Keywords (optional) / 检索关键词（可选）")
         run_button = gr.Button("Run Script / 运行脚本", variant='primary')
         output_area = gr.Textbox(label="Script Output / 脚本输出")
         
@@ -257,8 +259,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         outputs=batch_output
     )
 
-    gr.Markdown("### Developers: Jiaye, LEOSAM")
-    gr.Markdown("##### 开发人员：Jiaye、LEOSAM 是只兔狲")
+    gr.Markdown("### Developers: Jiaye,&nbsp;&nbsp;LEOSAM&nbsp;&nbsp;|&nbsp;&nbsp;开发人员：Jiaye、[LEOSAM 是只兔狲](https://civitai.com/user/LEOSAM)&nbsp;&nbsp;|&nbsp;&nbsp;Welcome everyone to add more new features to this project.")
 
 if __name__ == "__main__":
     demo.launch()

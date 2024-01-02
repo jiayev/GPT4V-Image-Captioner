@@ -54,7 +54,7 @@ def main(image_path, keywords):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Move documents containing keywords and their associated image files with the same name.")
     parser.add_argument('--image_path', type=str, help='The path to the folder')
-    parser.add_argument('--keywords', type=str, help='List of keywords, separated by commas', default='sorry,error')
+    parser.add_argument('--keywords', type=str, help='List of keywords, separated by commas', default='error,sorry,content')
     args = parser.parse_args()
     
     # Split the received keyword string into a list
