@@ -280,9 +280,11 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             process_images_button = gr.Button("Process Images / 压缩图像")
             
         with gr.Row():
-            # 添加一个Markdown组件来显示警告信息
+            # Add a Markdown component to display the warning message
             gr.Markdown("""
-            ⚠ **Warning / 警告**: This preprocessing will resize and compress all image files to jpg format with a total pixel count less than 1024*1024. Please make sure to backup your original files before processing / 本预处理过程将会把所有图像文件裁剪压缩至总像素小于1024*1024的jpg文件。请务必在处理前备份源文件！该过程可以缩小训练集体积，有助于加快打标速度，并缩短训练过程中的Cache latents to disk时间。
+        ⚠ **Warning / 警告**: This preprocessing process will resize and compress all image files into jpg format with a total pixel count ≤ 1024×1024 while maintaining the original aspect ratio, ensuring that both dimensions are multiples of 32. **Please make sure to backup your original files before processing!** This procedure can reduce the size of the training set, help to speed up the labeling process, and decrease the time taken to cache latents to disk during training.
+
+        本预处理过程将会在保持原图长宽比情况下，把所有图像文件裁剪压缩为总像素≤1024×1024的jpg文件，并且长宽像素均为32的倍数。**请务必在处理前备份源文件！**该过程可以缩小训练集体积，有助于加快打标速度，并缩短训练过程中的Cache latents to disk时间。
             """)
 
         with gr.Row():
