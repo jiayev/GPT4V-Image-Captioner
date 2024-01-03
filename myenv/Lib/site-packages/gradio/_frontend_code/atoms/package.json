@@ -1,0 +1,14 @@
+{
+	"name": "@gradio/atoms",
+	"version": "0.4.1",
+	"description": "Gradio UI packages",
+	"type": "module",
+	"main": "src/index.ts",
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"@gradio/utils": "workspace:^",
+		"@gradio/icons": "workspace:^"
+	},
+	"main_changeset": true
+}

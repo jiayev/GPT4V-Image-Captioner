@@ -1,0 +1,21 @@
+{
+	"name": "@gradio/label",
+	"version": "0.2.6",
+	"description": "Gradio UI packages",
+	"type": "module",
+	"author": "",
+	"license": "ISC",
+	"private": false,
+	"dependencies": {
+		"@gradio/atoms": "workspace:^",
+		"@gradio/icons": "workspace:^",
+		"@gradio/statustracker": "workspace:^",
+		"@gradio/utils": "workspace:^"
+	},
+	"main_changeset": true,
+	"main": "./Index.svelte",
+	"exports": {
+		".": "./Index.svelte",
+		"./package.json": "./package.json"
+	}
+}

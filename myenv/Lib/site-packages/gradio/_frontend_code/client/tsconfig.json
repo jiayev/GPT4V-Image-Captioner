@@ -1,0 +1,14 @@
+{
+	"include": ["src/**/*"],
+	"exclude": ["src/**/*.test.ts", "src/**/*.node-test.ts"],
+	"compilerOptions": {
+		"allowJs": true,
+		"declaration": true,
+		"emitDeclarationOnly": true,
+		"outDir": "dist",
+		"declarationMap": true,
+		"module": "es2020",
+		"moduleResolution": "bundler",
+		"skipDefaultLibCheck": true
+	}
+}

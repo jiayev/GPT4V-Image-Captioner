@@ -1,0 +1,25 @@
+{
+	"name": "@gradio/gallery",
+	"version": "0.4.15",
+	"description": "Gradio UI packages",
+	"type": "module",
+	"author": "",
+	"license": "ISC",
+	"private": false,
+	"dependencies": {
+		"@gradio/atoms": "workspace:^",
+		"@gradio/client": "workspace:^",
+		"@gradio/icons": "workspace:^",
+		"@gradio/image": "workspace:^",
+		"@gradio/statustracker": "workspace:^",
+		"@gradio/upload": "workspace:^",
+		"@gradio/utils": "workspace:^",
+		"dequal": "^2.0.2"
+	},
+	"main": "./Index.svelte",
+	"main_changeset": true,
+	"exports": {
+		".": "./Index.svelte",
+		"./package.json": "./package.json"
+	}
+}
