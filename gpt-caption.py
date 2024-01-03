@@ -95,6 +95,7 @@ def run_openai_api(image_path, prompt, api_key, api_url, quality=None):
         "max_tokens": 300
     }
     
+    # print(data)
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}"
@@ -282,9 +283,9 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         api_key_input = gr.Textbox(label="API Key", placeholder="Enter your GPT-4-Vision API Key here", type="password", value=saved_api_key)
         api_url_input = gr.Textbox(label="API URL", value=saved_api_url or "https://api.openai.com/v1/chat/completions", placeholder="Enter the GPT-4-Vision API URL here")       
         quality_choices = [
-            ("Auto / 自动"),
-            ("High Detail - More Expensive / 高细节-更贵"),
-            ("Low Detail - Cheaper / 低细节-更便宜")
+            ("Auto / 自动" , "auto"),
+            ("High Detail - More Expensive / 高细节-更贵" , "high"),
+            ("Low Detail - Cheaper / 低细节-更便宜" , "low")
         ]
         quality = gr.Dropdown(choices=quality_choices, label="Image Quality / 图片质量", value="auto")
 

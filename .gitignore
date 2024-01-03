@@ -2,6 +2,7 @@
 venv/
 env/
 
+__pycache__/
 # 如果虚拟环境文件夹有特殊名称，直接列出
 # my_virtual_env/
 
