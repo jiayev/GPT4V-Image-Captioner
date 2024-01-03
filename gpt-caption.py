@@ -73,7 +73,7 @@ def save_api_details(api_key, api_url):
     with open('api_settings.json', 'w', encoding='utf-8') as f:
         json.dump(settings, f)
 
-def run_openai_api(image_path, prompt, api_key, api_url):
+def run_openai_api(image_path, prompt, api_key, api_url, quality=None):
     with open(image_path, "rb") as image_file:
         image_base64 = base64.b64encode(image_file.read()).decode('utf-8')
     
@@ -84,7 +84,11 @@ def run_openai_api(image_path, prompt, api_key, api_url):
                 "role": "user",
                 "content": [
                     {"type": "text", "text": prompt},
-                    {"type": "image_url", "image_url": f"data:image/jpeg;base64,{image_base64}"}
+                    {"type": "image_url", "image_url": {
+                        "url":f"data:image/jpeg;base64,{image_base64}",
+                        "detail": f"{quality}"
+                        }
+                    }
                 ]
             }
         ],
@@ -128,13 +132,13 @@ def run_openai_api(image_path, prompt, api_key, api_url):
     except Exception as e:
         return f"Failed to parse the API response: {e}\n{response.text}"
 
-def process_single_image(api_key, prompt, api_url, image_path):
+def process_single_image(api_key, prompt, api_url, image_path, quality):
     save_api_details(api_key, api_url)
-    caption = run_openai_api(image_path, prompt, api_key, api_url)
+    caption = run_openai_api(image_path, prompt, api_key, api_url, quality)
     print(caption)
     return caption
 
-def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode):
+def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode, quality):
     should_stop.clear()
     save_api_details(api_key, api_url)
     results = []
@@ -153,7 +157,7 @@ def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode
         caption_path = os.path.join(image_dir, caption_filename)
 
         if file_handling_mode != "skip/跳过" or not os.path.exists(caption_path):
-            caption = run_openai_api(image_path, prompt, api_key, api_url)
+            caption = run_openai_api(image_path, prompt, api_key, api_url, quality)
             
             if caption.startswith("Error:") or caption.startswith("API error:"):
                 return handle_error(image_path, caption_path, caption_filename, filename)
@@ -212,7 +216,7 @@ def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode
 # 运行批处理
 saved_api_key, saved_api_url = get_saved_api_details()
 # 确保在这里设置正确的参数
-results = process_batch_images(saved_api_key, "Your prompt here", saved_api_url, "Your image directory here", "Your file handling mode here")
+results = process_batch_images(saved_api_key, "Your prompt here", saved_api_url, "Your image directory here", "Your file handling mode here", "auto")
 
 def run_script(folder_path, keywords):
     keywords = keywords if keywords else "sorry,error"
@@ -280,6 +284,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                               value="As an AI image tagging expert, please provide precise tags for these images to enhance CLIP model's understanding of the content. Employ succinct keywords or phrases, steering clear of elaborate sentences and extraneous conjunctions. Prioritize the tags by relevance. Your tags should capture key elements such as the main subject, setting, artistic style, composition, image quality, color tone, filter, and camera specifications, and any other tags crucial for the image. When tagging photos of people, include specific details like gender, nationality, attire, actions, pose, expressions, accessories, makeup, composition type, age, etc. For other image categories, apply appropriate and common descriptive tags as well. Recognize and tag any celebrities, well-known landmark or IPs if clearly featured in the image. Your tags should be accurate, non-duplicative, and within a 20-75 word count range. These tags will use for image re-creation, so the closer the resemblance to the original image, the better the tag quality. Tags should be comma-separated. Exceptional tagging will be rewarded with $10 per image.",
                               placeholder="Enter a descriptive prompt",
                               lines=5)
+    quality = gr.Dropdown(choices=["auto","high","low"],label="Image Quality / 图片质量",value="auto")
     with gr.Accordion("Prompt Saving / 提示词存档",open=False):
         saved_prompts = get_prompts_from_csv()
         saved_prompts_dropdown = gr.Dropdown(label="Saved Prompts / 提示词存档", choices=saved_prompts, type="value", interactive=True)
@@ -352,18 +357,18 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             outputs=[image_processing_output]
         )  
              
-    def batch_process(api_key, api_url, prompt, batch_dir, file_handling_mode):
-        process_batch_images(api_key, prompt, api_url, batch_dir, file_handling_mode) 
+    def batch_process(api_key, api_url, prompt, batch_dir, file_handling_mode, quality):
+        process_batch_images(api_key, prompt, api_url, batch_dir, file_handling_mode, quality) 
         return "Batch processing complete. Captions saved or updated as '.txt' files next to images."
     
-    def caption_image(api_key, api_url, prompt, image):
+    def caption_image(api_key, api_url, prompt, image, quality):
         if image:
-            return process_single_image(api_key, prompt, api_url, image)
+            return process_single_image(api_key, prompt, api_url, image, quality)
 
-    single_image_submit.click(caption_image, inputs=[api_key_input, api_url_input, prompt_input, image_input], outputs=single_image_output)
+    single_image_submit.click(caption_image, inputs=[api_key_input, api_url_input, prompt_input, image_input, quality], outputs=single_image_output)
     batch_process_submit.click(
         batch_process, 
-        inputs=[api_key_input, api_url_input, prompt_input, batch_dir_input, file_handling_mode], 
+        inputs=[api_key_input, api_url_input, prompt_input, batch_dir_input, file_handling_mode, quality], 
         outputs=batch_output
     )
 
