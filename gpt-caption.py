@@ -1,4 +1,5 @@
 import base64
+import csv
 import requests
 import json
 import os
@@ -229,6 +230,46 @@ def stop_batch_processing():
     should_stop.set()
     return "Attempting to stop batch processing. Please wait for the current image to finish."
 
+# Define the path to your CSV file here
+PROMPTS_CSV_PATH = "saved_prompts.csv"
+
+# Function to save prompt to CSV
+def save_prompt(prompt):
+    print(f"Saving prompt: {prompt}")
+    # Append prompt to CSV file, making sure not to duplicate prompts.
+    with open(PROMPTS_CSV_PATH, 'a+', newline='', encoding='utf-8') as file:
+        # Move to the start of the file to read existing prompts
+        file.seek(0)
+        reader = csv.reader(file)
+        existing_prompts = [row[0] for row in reader]
+        if prompt not in existing_prompts:
+            writer = csv.writer(file)
+            writer.writerow([prompt])
+        # Move back to the end of the file for any further writes
+        file.seek(0, os.SEEK_END)
+    return gr.Dropdown(label="Saved Prompts", choices=get_prompts_from_csv(), type="value", interactive=True)
+
+# Function to delete a prompt from CSV
+def delete_prompt(prompt):
+    lines = []
+    with open(PROMPTS_CSV_PATH, 'r', newline='', encoding='utf-8') as readFile:
+        reader = csv.reader(readFile)
+        lines = [row for row in reader if row and row[0] != prompt]
+    with open(PROMPTS_CSV_PATH, 'w', newline='', encoding='utf-8') as writeFile:
+        writer = csv.writer(writeFile)
+        writer.writerows(lines)
+    return gr.Dropdown(label="Saved Prompts", choices=get_prompts_from_csv(), type="value", interactive=True)
+
+# Function to get prompts from CSV for dropdown
+def get_prompts_from_csv():
+    if not os.path.exists(PROMPTS_CSV_PATH):
+        return []  # If the CSV file does not exist, return an empty list
+    with open(PROMPTS_CSV_PATH, 'r', newline='', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        return [row[0] for row in reader if row]  # Don't include empty rows
+
+saves_folder = "."
+
 with gr.Blocks(title="GPT4V captioner") as demo:
     gr.Markdown("### Image Captioning with GPT-4-Vision API / 使用 GPT-4-Vision API 进行图像打标")
     
@@ -239,6 +280,18 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                               value="As an AI image tagging expert, please provide precise tags for these images to enhance CLIP model's understanding of the content. Employ succinct keywords or phrases, steering clear of elaborate sentences and extraneous conjunctions. Prioritize the tags by relevance. Your tags should capture key elements such as the main subject, setting, artistic style, composition, image quality, color tone, filter, and camera specifications, and any other tags crucial for the image. When tagging photos of people, include specific details like gender, nationality, attire, actions, pose, expressions, accessories, makeup, composition type, age, etc. For other image categories, apply appropriate and common descriptive tags as well. Recognize and tag any celebrities, well-known landmark or IPs if clearly featured in the image. Your tags should be accurate, non-duplicative, and within a 20-75 word count range. These tags will use for image re-creation, so the closer the resemblance to the original image, the better the tag quality. Tags should be comma-separated. Exceptional tagging will be rewarded with $10 per image.",
                               placeholder="Enter a descriptive prompt",
                               lines=5)
+    with gr.Accordion("Prompt Saving / 提示词存档",open=False):
+        saved_prompts = get_prompts_from_csv()
+        saved_prompts_dropdown = gr.Dropdown(label="Saved Prompts / 提示词存档", choices=saved_prompts, type="value", interactive=True)
+        def update_textbox(prompt):
+                return gr.Textbox(value=prompt)
+        with gr.Row():
+            save_prompt_button = gr.Button("Save Prompt / 保存提示词")
+            delete_prompt_button = gr.Button("Delete Prompt / 删除提示词")
+            load_prompt_button = gr.Button("Load Prompt / 读取到输入框")
+        save_prompt_button.click(save_prompt, inputs=prompt_input, outputs=saved_prompts_dropdown)
+        load_prompt_button.click(update_textbox, inputs=saved_prompts_dropdown, outputs=prompt_input)
+        delete_prompt_button.click(delete_prompt, inputs=saved_prompts_dropdown, outputs=saved_prompts_dropdown)
     
     with gr.Tab("Single Image Processing / 单图处理"):
         with gr.Row():

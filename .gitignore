@@ -13,3 +13,6 @@ api_settings.json
 
 # Windows 系统文件
 Thumbs.db
+
+# Prompt存档
+saved_prompts.csv
