@@ -216,7 +216,8 @@ def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode
 # 运行批处理
 saved_api_key, saved_api_url = get_saved_api_details()
 # 确保在这里设置正确的参数
-results = process_batch_images(saved_api_key, "Your prompt here", saved_api_url, "Your image directory here", "Your file handling mode here", "auto")
+# results = process_batch_images(saved_api_key, "Your prompt here", saved_api_url, "Your image directory here", "Your file handling mode here", "auto")
+# 上面这一行似乎是多余的？我先注释掉了 - Jiaye
 
 def run_script(folder_path, keywords):
     keywords = keywords if keywords else "sorry,error"
