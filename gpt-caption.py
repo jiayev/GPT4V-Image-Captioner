@@ -16,6 +16,7 @@ import time
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from ImgProcessing import process_images_in_folder
+from Tag_Processor import count_tags_in_folder, generate_wordcloud, modify_tags_in_folder, generate_network_graph
 
 def unique_elements(original, addition):
     original_list = list(map(str.strip, original.split(',')))
@@ -276,6 +277,33 @@ def get_prompts_from_csv():
 
 saves_folder = "."
 
+def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, insert_position):
+    # 解析删除标签列表
+    tags_to_remove_list = tags_to_remove.split(',') if tags_to_remove else []
+    tags_to_remove_list = [tag.strip() for tag in tags_to_remove_list]
+    
+    # 解析替换标签为字典格式
+    tags_to_replace_dict = {}
+    if tags_to_replace:
+        try:
+            for pair in tags_to_replace.split(','):
+                old_tag, new_tag_pair = pair.split(':')
+                tags_to_replace_dict[old_tag.strip()] = new_tag_pair.strip()
+        except ValueError:
+            return "Error: Tags to replace must be in 'old_tag:new_tag' format separated by commas", None, None
+
+    # 修改文件夹中的标签
+    modify_message = modify_tags_in_folder(folder_path, tags_to_remove_list, tags_to_replace_dict, new_tag, insert_position)
+
+    # 在修改标签后重新计算标签并生成词云
+    tag_counts = count_tags_in_folder(folder_path, top_n)
+    wordcloud_path = generate_wordcloud(tag_counts)
+    # 生成网络图
+    network_graph_path = generate_network_graph(folder_path, top_n)
+    
+    # 返回结果
+    return tag_counts, wordcloud_path, network_graph_path, modify_message
+
 with gr.Blocks(title="GPT4V captioner") as demo:
     gr.Markdown("### Image Captioning with GPT-4-Vision API / 使用 GPT-4-Vision API 进行图像打标")
     
@@ -329,7 +357,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         with gr.Row():
             stop_button = gr.Button("Stop Batch Processing / 停止批量处理")
             stop_button.click(stop_batch_processing, inputs=[], outputs=batch_output)
-    
+
     with gr.Tab("Failed Tagging File Screening / 打标失败文件筛查"):
         folder_input = gr.Textbox(label="Folder Input / 文件夹输入", placeholder="Enter the directory path")
         keywords_input = gr.Textbox(placeholder="Enter keywords, e.g., sorry,error / 请输入关键词，例如：sorry,error", label="Keywords (optional) / 检索关键词（可选）")
@@ -337,6 +365,33 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         output_area = gr.Textbox(label="Script Output / 脚本输出")
         
         run_button.click(fn=run_script, inputs=[folder_input, keywords_input], outputs=output_area)
+
+    with gr.Tab("Tag Processing / 标签处理"):
+        with gr.Row():
+            folder_path_input = gr.Textbox(label="Folder Path / 文件夹路径", placeholder="Enter folder path / 在此输入文件夹路径")
+            top_n_input = gr.Number(label="Top N Tags / Top N 标签", value=100)
+            process_tags_button = gr.Button("Process Tags / 处理标签", variant='primary')
+            output_message = gr.Textbox(label="Output Message / 输出信息", interactive=False)
+
+        with gr.Row():
+            tags_to_remove_input = gr.Textbox(label="Tags to Remove / 删除标签", placeholder="Enter tags to remove, separated by commas / 输入要删除的标签，用逗号分隔", lines=3)
+            tags_to_replace_input = gr.Textbox(label="Tags to Replace / 替换标签", placeholder="Enter tags to replace in 'old_tag:new_tag' format, separated by commas / 输入要替换的标签，格式为 '旧标签:新标签'，用逗号分隔", lines=3)
+            new_tag_input = gr.Textbox(label="Add New Tag / 添加新标签", placeholder="Enter a new tag to add / 输入一个新标签以添加", lines=3)
+            insert_position_input = gr.Radio(label="New Tag Insert Position / 新标签插入位置", choices=["Start / 开始", "End / 结束", "Random / 随机"], value="End / 结束")
+
+        with gr.Row():
+            wordcloud_output = gr.Image(label="Word Cloud / 词云")
+            tag_counts_output = gr.Dataframe(label="Top Tags / 高频标签", interactive=True)
+        
+        with gr.Row():
+            network_graph_output = gr.Image(label="Network Graph / 网络图")
+
+        # 修改process_tags_button.click的调用
+        process_tags_button.click(
+            process_tags,
+            inputs=[folder_path_input, top_n_input, tags_to_remove_input, tags_to_replace_input, new_tag_input, insert_position_input],
+            outputs=[tag_counts_output, wordcloud_output, network_graph_output, output_message]
+        )
 
     with gr.Tab("Image Precompression / 图像预压缩"):
         with gr.Row():
