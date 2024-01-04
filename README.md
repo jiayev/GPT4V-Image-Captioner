@@ -12,7 +12,7 @@ Developers: Jiaye and [LEOSAM是只兔狲](https://civitai.com/user/LEOSAM). Wel
 
 # Installation and Startup Guide
 
-### Windows (If the automatic installation fails, please refer to the [Manual Installation Instructions](#windows-manual-installation-instructions) at the bottom of the document.)
+### Windows (If the automatic installation fails, please refer to the [Manual Installation Instructions](#windows-manual-installation-instructions))
 
 1. Open Command Prompt as administrator and navigate to the directory where you want to clone the repository.
 2. Clone the repository using the following command:
@@ -52,7 +52,7 @@ Developers: Jiaye and [LEOSAM是只兔狲](https://civitai.com/user/LEOSAM). Wel
 
 # 安装和启动指南
 
-### Windows（如自动安装失败，请参考文档最底部[手动安装说明](#windows-手动安装说明)）
+### Windows（如自动安装失败，请参考[手动安装说明](#windows-手动安装说明)）
 
 1. 以管理员权限打开命令提示符，并导航到您想要克隆仓库的目录。
 2. 使用以下命令克隆仓库：
