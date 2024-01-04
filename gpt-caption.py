@@ -49,12 +49,12 @@ def modify_file_content(file_path, new_content, mode):
             combined_content = unique_elements(new_content, existing_content)
             file.write(combined_content)
             file.truncate()
-        elif mode == "append/结尾追加":
+        elif mode == "append/末尾追加":
             combined_content = unique_elements(existing_content, new_content)
             file.write(combined_content)
             file.truncate()
         else:
-            raise ValueError("Invalid mode. Must be 'overwrite/覆盖', 'prepend/前置插入', or 'append/结尾追加'.")
+            raise ValueError("Invalid mode. Must be 'overwrite/覆盖', 'prepend/前置插入', or 'append/末尾追加'.")
 
 should_stop = threading.Event()
 
