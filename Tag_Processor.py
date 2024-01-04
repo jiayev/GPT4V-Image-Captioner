@@ -44,7 +44,7 @@ def generate_network_graph(folder_path, top_n):
     node_color = [degrees[n] for n in G.nodes]
 
     # 为边设置宽度
-    edge_width = [G[u][v]['weight'] / 10 for u, v in G.edges]  # 除以10是为了使边宽度合适
+    edge_width = [G[u][v]['weight'] / 100 for u, v in G.edges]  # 除以10是为了使边宽度合适
 
     # 计算节点的布局
     pos = nx.kamada_kawai_layout(G)
