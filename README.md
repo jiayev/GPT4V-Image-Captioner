@@ -8,7 +8,7 @@ Developers: Jiaye and [LEOSAM是只兔狲](https://civitai.com/user/LEOSAM). Wel
 这是一款利用 GPT-4-vision API 为图像打标的简易工具。
 使用 Gradio 构建，部分代码由 GPT 辅助生成。
 
-![2](https://github.com/jiayev/GPT4V-Image-Captioner/assets/16369810/69ef5e42-00e8-48af-bb5d-26064c1e9084)
+![1 (2)](https://github.com/jiayev/GPT4V-Image-Captioner/assets/16369810/fa98e5db-8247-4f20-a9f5-b056c31209d6)
 
 # Installation and Startup Guide
 
@@ -198,7 +198,7 @@ Developers: Jiaye and [LEOSAM是只兔狲](https://civitai.com/user/LEOSAM). Wel
     python -m pip install --upgrade pip
     ```
 
-8. 在虚拟环境中安装 `requests`、`gradio` 和 `tqdm` 库：
+8. 在虚拟环境中安装 `requests`、`gradio` 、 `tqdm` 等库：
     ```
     pip install scipy networkx wordcloud matplotlib Pillow tqdm gradio requests
     ```
