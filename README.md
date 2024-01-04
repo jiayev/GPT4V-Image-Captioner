@@ -156,7 +156,7 @@ Developers: Jiaye and [LEOSAM是只兔狲](https://civitai.com/user/LEOSAM). Wel
 
 8. Install the `requests`, `gradio`, and `tqdm` libraries within the virtual environment:
     ```
-    pip install Pillow tqdm gradio requests
+    pip install scipy networkx wordcloud matplotlib Pillow tqdm gradio requests
     ```
 
 9. After completing the steps above, you can start GPT4V-Image-Captioner by double-clicking the `Start_windows.bat` file.
