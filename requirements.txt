@@ -1,0 +1,8 @@
+scipy
+networkx
+wordcloud
+matplotlib
+Pillow
+tqdm
+gradio
+requests
