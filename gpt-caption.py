@@ -17,6 +17,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from ImgProcessing import process_images_in_folder
 from Tag_Processor import count_tags_in_folder, generate_wordcloud, modify_tags_in_folder, generate_network_graph
+import textwrap  # Import the textwrap module to help with wrapping text
 
 def unique_elements(original, addition):
     original_list = list(map(str.strip, original.split(',')))
@@ -277,7 +278,43 @@ def get_prompts_from_csv():
 
 saves_folder = "."
 
-def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, insert_position):
+def translate_tags(tags, api_key, api_url):
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
+
+    session = requests.Session()
+    retries = Retry(total=5, backoff_factor=0.1, status_forcelist=[429, 500, 502, 503, 504])
+    session.mount('https://', HTTPAdapter(max_retries=retries))
+
+    def send_translation_request(tag):
+        data = {
+            "model": "gpt-3.5-turbo",
+            "messages": [
+                {"role": "user", "content": f"你是一个英译中专家，请直接返回'{tag}'最有可能的两种中文翻译结果，结果以逗号间隔."}
+            ]
+        }
+        response = session.post(api_url, headers=headers, json=data)
+        response_data = response.json()
+        
+        if response.status_code == 200 and 'choices' in response_data and 'content' in response_data['choices'][0]['message']:
+            return response_data['choices'][0]['message']['content']
+        else:
+            return f"Error or no translation for tag: {tag}"
+
+    # 使用线程池执行并发翻译请求
+    translations = [None] * len(tags)  # 初始化翻译列表，保持与tags相同的长度
+    with ThreadPoolExecutor(max_workers=50) as executor:
+        future_to_index = {executor.submit(send_translation_request, tag): i for i, tag in enumerate(tags)}  # 创建一个映射未来对象到列表索引的字典
+        for future in as_completed(future_to_index):
+            index = future_to_index[future]  # 获取未来对象对应的原始标签索引
+            translations[index] = future.result()  # 使用索引来放置翻译结果，保持与原始标签的顺序
+
+    session.close()  # 关闭会话
+    return translations
+
+def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, insert_position, translate, api_key, api_url):
     # 解析删除标签列表
     tags_to_remove_list = tags_to_remove.split(',') if tags_to_remove else []
     tags_to_remove_list = [tag.strip() for tag in tags_to_remove_list]
@@ -297,12 +334,28 @@ def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, i
 
     # 在修改标签后重新计算标签并生成词云
     tag_counts = count_tags_in_folder(folder_path, top_n)
+
+    def truncate_tag(tag, max_length=30):
+        """截断过长的标签名称，只保留前max_length个字符，并在末尾添加省略号"""
+        return (tag[:max_length] + '...') if len(tag) > max_length else tag
+
+    if translate:
+        tags_to_translate = [tag for tag, _ in tag_counts]
+        translations = translate_tags(tags_to_translate, api_key, api_url)
+        # 确保 translations 列表长度与 tag_counts 一致
+        translations.extend(["" for _ in range(len(tag_counts) - len(translations))])
+        tag_counts_with_translation = [(truncate_tag(tag_counts[i][0]), tag_counts[i][1], translations[i]) for i in range(len(tag_counts))]
+    else:
+        tag_counts_with_translation = [(truncate_tag(tag), count, "") for tag, count in tag_counts]
+
     wordcloud_path = generate_wordcloud(tag_counts)
     # 生成网络图
     network_graph_path = generate_network_graph(folder_path, top_n)
     
     # 返回结果
-    return tag_counts, wordcloud_path, network_graph_path, modify_message
+    return tag_counts_with_translation, wordcloud_path, network_graph_path, "Tags processed successfully."
+
+os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
 
 with gr.Blocks(title="GPT4V captioner") as demo:
     gr.Markdown("### Image Captioning with GPT-4-Vision API / 使用 GPT-4-Vision API 进行图像打标")
@@ -367,9 +420,11 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         run_button.click(fn=run_script, inputs=[folder_input, keywords_input], outputs=output_area)
 
     with gr.Tab("Tag Processing / 标签处理"):
+        
         with gr.Row():
             folder_path_input = gr.Textbox(label="Folder Path / 文件夹路径", placeholder="Enter folder path / 在此输入文件夹路径")
             top_n_input = gr.Number(label="Top N Tags / Top N 标签", value=100)
+            translate_tags_checkbox = gr.Checkbox(label="使用GPT3.5翻译标签为中文", value=False)  # 新增翻译复选框
             process_tags_button = gr.Button("Process Tags / 处理标签", variant='primary')
             output_message = gr.Textbox(label="Output Message / 输出信息", interactive=False)
 
@@ -381,15 +436,19 @@ with gr.Blocks(title="GPT4V captioner") as demo:
 
         with gr.Row():
             wordcloud_output = gr.Image(label="Word Cloud / 词云")
-            tag_counts_output = gr.Dataframe(label="Top Tags / 高频标签", interactive=True)
-        
+            tag_counts_output = gr.Dataframe(label="Top Tags / 高频标签", headers=["Tag Name", "Frequency", "Chinese Translation"], interactive=True)  # 修改 Dataframe 组件以显示三列
+            
         with gr.Row():
             network_graph_output = gr.Image(label="Network Graph / 网络图")
 
-        # 修改process_tags_button.click的调用
         process_tags_button.click(
             process_tags,
-            inputs=[folder_path_input, top_n_input, tags_to_remove_input, tags_to_replace_input, new_tag_input, insert_position_input],
+            inputs=[
+                folder_path_input, top_n_input, tags_to_remove_input, 
+                tags_to_replace_input, new_tag_input, insert_position_input, 
+                translate_tags_checkbox,  # 新增翻译复选框
+                api_key_input, api_url_input
+            ],
             outputs=[tag_counts_output, wordcloud_output, network_graph_output, output_message]
         )
 
