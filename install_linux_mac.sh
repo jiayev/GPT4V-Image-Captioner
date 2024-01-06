@@ -21,7 +21,7 @@ source myenv/bin/activate
 pip install --upgrade pip
 
 # Install necessary Python libraries
-pip install scipy networkx wordcloud matplotlib Pillow tqdm gradio requests
+pip install -r requirements.txt
 
 # Run Python script (script name is gpt-caption.py)
 python3 gpt-caption.py
