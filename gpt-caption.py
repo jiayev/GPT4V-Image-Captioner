@@ -75,7 +75,7 @@ def save_api_details(api_key, api_url):
     with open('api_settings.json', 'w', encoding='utf-8') as f:
         json.dump(settings, f)
 
-def run_openai_api(image_path, prompt, api_key, api_url, quality=None):
+def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=10):
     with open(image_path, "rb") as image_file:
         image_base64 = base64.b64encode(image_file.read()).decode('utf-8')
     
@@ -113,7 +113,7 @@ def run_openai_api(image_path, prompt, api_key, api_url, quality=None):
         s.mount('https://', HTTPAdapter(max_retries=retries))
         
         try:
-            response = s.post(api_url, headers=headers, json=data, timeout=10)
+            response = s.post(api_url, headers=headers, json=data, timeout=timeout)
             response.raise_for_status()  # 如果请求失败，将抛出 HTTPError
         except requests.exceptions.HTTPError as errh:
             return f"HTTP Error: {errh}"
@@ -135,13 +135,13 @@ def run_openai_api(image_path, prompt, api_key, api_url, quality=None):
     except Exception as e:
         return f"Failed to parse the API response: {e}\n{response.text}"
 
-def process_single_image(api_key, prompt, api_url, image_path, quality):
+def process_single_image(api_key, prompt, api_url, image_path, quality, timeout):
     save_api_details(api_key, api_url)
-    caption = run_openai_api(image_path, prompt, api_key, api_url, quality)
+    caption = run_openai_api(image_path, prompt, api_key, api_url, quality, timeout)
     print(caption)
     return caption
 
-def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode, quality):
+def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode, quality, timeout):
     should_stop.clear()
     save_api_details(api_key, api_url)
     results = []
@@ -160,7 +160,7 @@ def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode
         caption_path = os.path.join(image_dir, caption_filename)
 
         if file_handling_mode != "skip/跳过" or not os.path.exists(caption_path):
-            caption = run_openai_api(image_path, prompt, api_key, api_url, quality)
+            caption = run_openai_api(image_path, prompt, api_key, api_url, quality, timeout)
             
             if caption.startswith("Error:") or caption.startswith("API error:"):
                 return handle_error(image_path, caption_path, caption_filename, filename)
@@ -369,6 +369,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             ("Low Detail - Cheaper / 低细节-更便宜" , "low")
         ]
         quality = gr.Dropdown(choices=quality_choices, label="Image Quality / 图片质量", value="auto")
+        timeout_input = gr.Number(label="Timeout (seconds) / 超时时间（秒）", value=10, step=1)
 
     prompt_input = gr.Textbox(label="Prompt / 打标需求",
                               value="As an AI image tagging expert, please provide precise tags for these images to enhance CLIP model's understanding of the content. Employ succinct keywords or phrases, steering clear of elaborate sentences and extraneous conjunctions. Prioritize the tags by relevance. Your tags should capture key elements such as the main subject, setting, artistic style, composition, image quality, color tone, filter, and camera specifications, and any other tags crucial for the image. When tagging photos of people, include specific details like gender, nationality, attire, actions, pose, expressions, accessories, makeup, composition type, age, etc. For other image categories, apply appropriate and common descriptive tags as well. Recognize and tag any celebrities, well-known landmark or IPs if clearly featured in the image. Your tags should be accurate, non-duplicative, and within a 20-75 word count range. These tags will use for image re-creation, so the closer the resemblance to the original image, the better the tag quality. Tags should be comma-separated. Exceptional tagging will be rewarded with $10 per image.",
@@ -480,18 +481,18 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             outputs=[image_processing_output]
         )  
              
-    def batch_process(api_key, api_url, prompt, batch_dir, file_handling_mode, quality):
-        process_batch_images(api_key, prompt, api_url, batch_dir, file_handling_mode, quality) 
+    def batch_process(api_key, api_url, prompt, batch_dir, file_handling_mode, quality, timeout):
+        process_batch_images(api_key, prompt, api_url, batch_dir, file_handling_mode, quality, timeout)
         return "Batch processing complete. Captions saved or updated as '.txt' files next to images."
     
-    def caption_image(api_key, api_url, prompt, image, quality):
+    def caption_image(api_key, api_url, prompt, image, quality, timeout):
         if image:
-            return process_single_image(api_key, prompt, api_url, image, quality)
+            return process_single_image(api_key, prompt, api_url, image, quality, timeout)
 
-    single_image_submit.click(caption_image, inputs=[api_key_input, api_url_input, prompt_input, image_input, quality], outputs=single_image_output)
+    single_image_submit.click(caption_image, inputs=[api_key_input, api_url_input, prompt_input, image_input, quality, timeout_input], outputs=single_image_output)
     batch_process_submit.click(
         batch_process, 
-        inputs=[api_key_input, api_url_input, prompt_input, batch_dir_input, file_handling_mode, quality], 
+        inputs=[api_key_input, api_url_input, prompt_input, batch_dir_input, file_handling_mode, quality, timeout_input],
         outputs=batch_output
     )
 
