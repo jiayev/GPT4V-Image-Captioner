@@ -1,3 +1,6 @@
+$currentDirectory = $PWD.Path
+Write-Host "当前工作目录: $currentDirectory"
+
 $Env:HF_HOME = "huggingface"
 $Env:PIP_DISABLE_PIP_VERSION_CHECK = 1
 $Env:PIP_NO_CACHE_DIR = 1
@@ -31,7 +34,7 @@ Check "激活虚拟环境失败。"
 python -m pip install --upgrade pip
 
 Write-Output "安装依赖..."
-pip install -r requirements.txt
+pip install -r ./install_script/requirements.txt
 Check "依赖安装失败。"
 
 Write-Output "安装完毕，请运行Start打开GUI"

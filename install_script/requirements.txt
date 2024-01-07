@@ -6,3 +6,4 @@ Pillow
 tqdm
 gradio
 requests
+huggingface_hub
