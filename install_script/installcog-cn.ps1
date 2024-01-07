@@ -29,11 +29,9 @@ Check "xformers 安装失败。"
 
 Write-Output "安装 bitsandbytes..."
 pip install bitsandbytes==0.41.1 --index-url https://jihulab.com/api/v4/projects/140618/packages/pypi/simple
-Write-Output "安装 deepspeed..."
-pip install deepspeed-0.11.2+8ce7471-py3-none-any.whl
 
 Write-Output "安装依赖..."
-pip install -r require.txt
+pip install -r ./install_script/require.txt
 Check "依赖安装失败。"
 
 Write-Output "安装完毕"
