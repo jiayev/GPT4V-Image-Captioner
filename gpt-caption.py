@@ -19,6 +19,9 @@ from ImgProcessing import process_images_in_folder
 from Tag_Processor import count_tags_in_folder, generate_wordcloud, modify_tags_in_folder, generate_network_graph
 import textwrap  # Import the textwrap module to help with wrapping text
 
+from huggingface_hub import snapshot_download
+import socket
+
 def unique_elements(original, addition):
     original_list = list(map(str.strip, original.split(',')))
     addition_list = list(map(str.strip, addition.split(',')))
@@ -72,8 +75,10 @@ def save_api_details(api_key, api_url):
         'api_key': api_key,
         'api_url': api_url
     }
-    with open('api_settings.json', 'w', encoding='utf-8') as f:
-        json.dump(settings, f)
+    # 不记录空的apikey
+    if api_key != "":
+        with open('api_settings.json', 'w', encoding='utf-8') as f:
+            json.dump(settings, f)
 
 def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=10):
     with open(image_path, "rb") as image_file:
@@ -362,7 +367,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
     
     with gr.Row():
         api_key_input = gr.Textbox(label="API Key", placeholder="Enter your GPT-4-Vision API Key here", type="password", value=saved_api_key)
-        api_url_input = gr.Textbox(label="API URL", value=saved_api_url or "https://api.openai.com/v1/chat/completions", placeholder="Enter the GPT-4-Vision API URL here")       
+        api_url_input = gr.Textbox(label="API URL", value=saved_api_url or "https://api.openai.com/v1/chat/completions", placeholder="Enter the GPT-4-Vision API URL here") 
         quality_choices = [
             ("Auto / 自动" , "auto"),
             ("High Detail - More Expensive / 高细节-更贵" , "high"),
@@ -480,7 +485,79 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             inputs=[folder_path_input], 
             outputs=[image_processing_output]
         )  
-             
+    
+    # CogVLM一键
+    with gr.Tab("CogVLM Config / CogVLM配置"):
+        with gr.Row():    
+            gr.Markdown("""
+        ⚠ **Warning / 警告**: This is the CogVLM configuration page. To use CogVLM, you need to download it, which is approximately 35g+ in size and takes a long time (really, really long).
+                        In addition, in terms of model selection, the vqa model performs better but slower, while the chat model is faster but slightly weaker.
+
+        此为CogVLM配置页面，使用CogVLM需要配置相关环境并下载模型，大小约为35g+，需要较长时间（真的很长）。模型选择上，vqa模型效果更好但是更慢，chat模型更快但是效果略弱。
+            """)
+            
+        with gr.Row(): 
+            models_select = gr.Radio(label="Choose Models / 选择模型", choices=["vqa", "chat"], value="vqa")
+            acceleration_select = gr.Radio(label="Choose Default Plz / 选择是否国内加速", choices=["CN", "default"], value="CN")
+            download_button = gr.Button("Download Models / 下载模型", variant='primary')
+            install_button = gr.Button("Install / 安装", variant='primary')
+        
+        with gr.Row():
+            switch_select = gr.Radio(label="Choose API / 选择API", choices=["GPT", "Cog"], value="GPT")
+            models_switch = gr.Radio(label="Choose Use Cog Models / 选择使用的Cog模型", choices=["vqa", "chat"], value="vqa")
+            switch_button = gr.Button("Switch / 切换", variant='primary')
+
+        def download_snapshot(model_type,acceleration):
+            if acceleration == 'CN':
+                os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+            if model_type == 'vqa':
+                snapshot_download(
+                    repo_id="THUDM/cogagent-vqa-hf",
+                    local_dir="./models/cogagent-vqa-hf",
+                    max_workers=8
+                )
+            else:
+                snapshot_download(
+                    repo_id="THUDM/cogagent-chat-hf",
+                    local_dir="./models/cogagent-chat-hf",
+                    max_workers=8
+                )
+                
+        def install_cog(acceleration):
+            if acceleration == 'CN':
+                ps1_script_path = './installcog-cn.ps1'
+            else:
+                ps1_script_path = './installcog.ps1'
+            powershell_command = f'powershell -ExecutionPolicy Bypass -File "{ps1_script_path}"'
+            try:
+                subprocess.run(powershell_command, check=True, shell=True)
+            except subprocess.CalledProcessError as e:
+                print(f'Error: {e}')
+                
+        def switch_API(api,cogmod):
+            if api == 'GPT':
+                key = saved_api_key
+                url = saved_api_url
+                time_out = 10
+            else:
+                subprocess.Popen(['powershell.exe', '-ExecutionPolicy', 'Bypass', '-File', 'runAPI.ps1', '-mod', cogmod],shell=True)
+                while True:
+                    try:
+                        with socket.create_connection(("127.0.0.1", 8000), timeout=1):
+                            print("API has started.")
+                            break
+                    except (socket.timeout, ConnectionRefusedError):
+                        print("Retrying...")
+                        time.sleep(2)
+                key = ""
+                url = "http://127.0.0.1:8000/v1/chat/completions"
+                time_out = 60
+            return key, url, time_out
+        
+        download_button.click(download_snapshot, inputs=[models_select, acceleration_select],outputs=download_button)
+        install_button.click(install_cog, inputs=[acceleration_select],outputs=install_button)
+        switch_button.click(switch_API, inputs=[switch_select,models_switch],outputs=[api_key_input,api_url_input,timeout_input])
+
     def batch_process(api_key, api_url, prompt, batch_dir, file_handling_mode, quality, timeout):
         process_batch_images(api_key, prompt, api_url, batch_dir, file_handling_mode, quality, timeout)
         return "Batch processing complete. Captions saved or updated as '.txt' files next to images."
@@ -488,7 +565,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
     def caption_image(api_key, api_url, prompt, image, quality, timeout):
         if image:
             return process_single_image(api_key, prompt, api_url, image, quality, timeout)
-
+    
     single_image_submit.click(caption_image, inputs=[api_key_input, api_url_input, prompt_input, image_input, quality, timeout_input], outputs=single_image_output)
     batch_process_submit.click(
         batch_process, 
