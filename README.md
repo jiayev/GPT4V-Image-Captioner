@@ -106,6 +106,10 @@ Developers: Jiaye and [LEOSAM是只兔狲](https://civitai.com/user/LEOSAM). Wel
 
 ## 更新内容
 
+### 2024年1月6日
+- **更智能的一键安装**: 增加了更智能的一键安装 (`install_windows.bat`) 功能，国内的小伙伴不用再看着pip十几kb慢慢爬了，更加国际化(×，简化了程序的安装。
+- **CogVLM支持**: 增加了CogVLM模型的一键安装以及切换页面，没有GPT4的小伙伴也可以靠本地多模态快乐玩耍了（穷哥们狂喜。
+
 ### 2024年1月2日
 - **一键安装和一键启动**: 增加了一键安装 (`install_windows.bat` / `install_linux_mac.sh`) 和一键启动 (`Start_windows.bat` / `Start_linux_mac.sh`) 功能，简化了程序的安装和启动过程。
 - **环境说明补充**: 补充了在Windows和Linux环境下程序的安装和启动说明。
