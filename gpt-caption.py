@@ -525,9 +525,9 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                 
         def install_cog(acceleration):
             if acceleration == 'CN':
-                ps1_script_path = './installcog-cn.ps1'
+                ps1_script_path = './install_script/installcog-cn.ps1'
             else:
-                ps1_script_path = './installcog.ps1'
+                ps1_script_path = './install_script/installcog.ps1'
             powershell_command = f'powershell -ExecutionPolicy Bypass -File "{ps1_script_path}"'
             try:
                 subprocess.run(powershell_command, check=True, shell=True)
