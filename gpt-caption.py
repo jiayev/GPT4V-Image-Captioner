@@ -575,7 +575,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         outputs=batch_output
     )
 
-    gr.Markdown("### Developers: Jiaye,&nbsp;&nbsp;LEOSAM&nbsp;&nbsp;|&nbsp;&nbsp;开发人员：Jiaye、[LEOSAM 是只兔狲](https://civitai.com/user/LEOSAM)&nbsp;&nbsp;|&nbsp;&nbsp;Welcome everyone to add more new features to this project.")
+    gr.Markdown("### Developers: Jiaye,&nbsp;&nbsp;LEOSAM&nbsp;&nbsp;|&nbsp;&nbsp;开发人员：Jiaye、[LEOSAM 是只兔狲](https://civitai.com/user/LEOSAM)、[SleeeepyZhou](https://space.bilibili.com/360375877)、[Fok](https://civitai.com/user/fok3827)&nbsp;&nbsp;|&nbsp;&nbsp;Welcome everyone to add more new features to this project.")
 
 if __name__ == "__main__":
     demo.launch(server_port=8848)
