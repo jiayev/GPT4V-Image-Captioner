@@ -8,7 +8,6 @@ streamlit>=1.29.0
 timm>=0.9.12
 accelerate>=0.25.0
 pydantic>=2.5.2
-transformers
 
 openai>=1.4.0
 sse-starlette>=1.8.2
