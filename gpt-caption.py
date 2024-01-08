@@ -492,8 +492,10 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             gr.Markdown("""
         ⚠ **Warning / 警告**: This is the CogVLM configuration page. To use CogVLM, you need to download it, which is approximately 35g+ in size and takes a long time (really, really long).
                         In addition, in terms of model selection, the vqa model performs better but slower, while the chat model is faster but slightly weaker.
+                        Please confirm that your GPU has sufficient graphics memory (approximately 14g ±) when using CogVLM
 
         此为CogVLM配置页面，使用CogVLM需要配置相关环境并下载模型，大小约为35g+，需要较长时间（真的很长）。模型选择上，vqa模型效果更好但是更慢，chat模型更快但是效果略弱。
+        使用CogVLM请确认自己的显卡有足够的显存（约14g±）
             """)
             
         with gr.Row(): 
