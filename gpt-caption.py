@@ -362,6 +362,17 @@ def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, i
 
 os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
 
+API_state = None
+def cog_run(api,mod):
+    global API_state
+    if api == "Cog":
+        API_state = subprocess.Popen(['powershell.exe', '-ExecutionPolicy', 'Bypass', '-File', 'runAPI.ps1', '-mod', mod],shell=True)
+        return
+    elif API_state:
+        API_state.terminate()
+        return
+    
+
 with gr.Blocks(title="GPT4V captioner") as demo:
     gr.Markdown("### Image Captioning with GPT-4-Vision API / 使用 GPT-4-Vision API 进行图像打标")
     
@@ -507,6 +518,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         with gr.Row():
             switch_select = gr.Radio(label="Choose API / 选择API", choices=["GPT", "Cog"], value="GPT")
             models_switch = gr.Radio(label="Choose Use Cog Models / 选择使用的Cog模型", choices=["vqa", "chat"], value="vqa")
+            A_state = gr.Textbox(label="API State / API状态", interactive=False, value="GPT")
             switch_button = gr.Button("Switch / 切换", variant='primary')
 
         def download_snapshot(model_type,acceleration):
@@ -536,29 +548,37 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             except subprocess.CalledProcessError as e:
                 print(f'Error: {e}')
                 
-        def switch_API(api,cogmod):
+        def switch_API(api,cogmod,state):
             if api == 'GPT':
+                if state[:3] == "Cog":
+                    cog_run(api,cogmod)
                 key = saved_api_key
                 url = saved_api_url
                 time_out = 10
-            else:
-                subprocess.Popen(['powershell.exe', '-ExecutionPolicy', 'Bypass', '-File', 'runAPI.ps1', '-mod', cogmod],shell=True)
-                while True:
-                    try:
-                        with socket.create_connection(("127.0.0.1", 8000), timeout=1):
-                            print("API has started.")
-                            break
-                    except (socket.timeout, ConnectionRefusedError):
-                        print("Retrying...")
-                        time.sleep(2)
-                key = ""
-                url = "http://127.0.0.1:8000/v1/chat/completions"
-                time_out = 60
-            return key, url, time_out
+                s_state = "GPT"
+            elif api == 'Cog':
+                if state[:3] != "Cog":
+                    cog_run(api,cogmod)
+                    while True:
+                        try:
+                            with socket.create_connection(("127.0.0.1", 8000), timeout=1):
+                                print("API has started.")
+                                break
+                        except (socket.timeout, ConnectionRefusedError):
+                            print("Retrying...")
+                            time.sleep(2)
+                    key = ""
+                    url = "http://127.0.0.1:8000/v1/chat/completions"
+                    time_out = 60
+                key = api_key_input
+                url = api_url_input
+                time_out = timeout_input
+                s_state = f"Cog-{cogmod}"
+            return key, url, time_out, s_state
         
         download_button.click(download_snapshot, inputs=[models_select, acceleration_select],outputs=download_button)
         install_button.click(install_cog, inputs=[acceleration_select],outputs=install_button)
-        switch_button.click(switch_API, inputs=[switch_select,models_switch],outputs=[api_key_input,api_url_input,timeout_input])
+        switch_button.click(switch_API, inputs=[switch_select,models_switch,A_state],outputs=[api_key_input,api_url_input,timeout_input,A_state])
 
     def batch_process(api_key, api_url, prompt, batch_dir, file_handling_mode, quality, timeout):
         process_batch_images(api_key, prompt, api_url, batch_dir, file_handling_mode, quality, timeout)
