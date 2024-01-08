@@ -24,10 +24,13 @@ parser.add_argument("--model", type=str, default="vqa")
 args = parser.parse_args()
 mod = args.model
 
+mod_vqa = './models/cogagent-vqa-hf'
+mod_chat = './models/cogagent-chat-hf'
+
 if mod == "vqa":
-    MODEL_PATH = os.environ.get('MODEL_PATH', './models/cogagent-vqa-hf')
+    MODEL_PATH = mod_vqa
 else:
-    MODEL_PATH = os.environ.get('MODEL_PATH', './models/cogagent-chat-hf')
+    MODEL_PATH = mod_chat
 
 TOKENIZER_PATH = os.environ.get("TOKENIZER_PATH", 'lmsys/vicuna-7b-v1.5')
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -142,7 +145,6 @@ class ChatCompletionResponse(BaseModel):
     choices: List[Union[ChatCompletionResponseChoice, ChatCompletionResponseStreamChoice]]
     created: Optional[int] = Field(default_factory=lambda: int(time.time()))
     usage: Optional[UsageInfo] = None
-
 
 @app.get("/v1/models", response_model=ModelList)
 async def list_models():
@@ -359,9 +361,32 @@ def generate_stream_cogvlm(model: PreTrainedModel, tokenizer: PreTrainedTokenize
     }
     yield ret
 
-
 gc.collect()
-torch.cuda.empty_cache()
+
+def load_mod(model_input):
+    global model
+    if 'cuda' in DEVICE:
+        model = AutoModelForCausalLM.from_pretrained(
+            model_input,
+            trust_remote_code=True,
+            load_in_4bit=True,
+            torch_dtype=torch_type,
+            low_cpu_mem_usage=True
+        ).eval()
+    else:
+        model = AutoModelForCausalLM.from_pretrained(model_input, trust_remote_code=True).float().to(DEVICE).eval()
+
+@app.post("/v1/vqa")
+async def shutdown():
+    global model
+    del model
+    load_mod(mod_vqa)
+
+@app.post("/v1/chat")
+async def shutdown():
+    global model
+    del model
+    load_mod(mod_chat)
 
 if __name__ == "__main__":
     tokenizer = LlamaTokenizer.from_pretrained(
@@ -375,15 +400,7 @@ if __name__ == "__main__":
 
     print("========Use torch type as:{} with device:{}========\n\n".format(torch_type, DEVICE))
 
-    if 'cuda' in DEVICE:
-        model = AutoModelForCausalLM.from_pretrained(
-            MODEL_PATH,
-            trust_remote_code=True,
-            load_in_4bit=True,
-            torch_dtype=torch_type,
-            low_cpu_mem_usage=True
-        ).eval()
-
-    else:
-        model = AutoModelForCausalLM.from_pretrained(MODEL_PATH, trust_remote_code=True).float().to(DEVICE).eval()
+    load_mod(MODEL_PATH)
+    
     uvicorn.run(app, host='0.0.0.0', port=8000, workers=1)
+

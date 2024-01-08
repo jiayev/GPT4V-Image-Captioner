@@ -1,5 +1,6 @@
 import base64
 import csv
+from pickle import TRUE
 import requests
 import json
 import os
@@ -360,18 +361,9 @@ def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, i
     # 返回结果
     return tag_counts_with_translation, wordcloud_path, network_graph_path, "Tags processed successfully."
 
+
 os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
 
-API_state = None
-def cog_run(api,mod):
-    global API_state
-    if api == "Cog":
-        API_state = subprocess.Popen(['powershell.exe', '-ExecutionPolicy', 'Bypass', '-File', 'runAPI.ps1', '-mod', mod],shell=True)
-        return
-    elif API_state:
-        API_state.terminate()
-        return
-    
 
 with gr.Blocks(title="GPT4V captioner") as demo:
     gr.Markdown("### Image Captioning with GPT-4-Vision API / 使用 GPT-4-Vision API 进行图像打标")
@@ -550,27 +542,40 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                 
         def switch_API(api,cogmod,state):
             if api == 'GPT':
-                if state[:3] == "Cog":
-                    cog_run(api,cogmod)
                 key = saved_api_key
                 url = saved_api_url
                 time_out = 10
                 s_state = "GPT"
+
             elif api == 'Cog':
-                if state[:3] != "Cog":
-                    cog_run(api,cogmod)
+
+
+                def is_connection():
+                    try:
+                        socket.create_connection(("127.0.0.1", 8000), timeout=1)
+                        print("API has started.")
+                        return True
+                    except (socket.timeout, ConnectionRefusedError):
+                        return False
+
+
+                if is_connection():
+                    if state[-3:] != cogmod :
+                        requests.post(f"http://127.0.0.1:8000/v1/{cogmod}")
+                else:
+                    subprocess.Popen(['powershell.exe', '-ExecutionPolicy', 'Bypass', '-File', 'runAPI.ps1', '-mod', cogmod],shell=True)
                     while True:
-                        try:
-                            with socket.create_connection(("127.0.0.1", 8000), timeout=1):
-                                print("API has started.")
-                                break
-                        except (socket.timeout, ConnectionRefusedError):
+                        if is_connection():
+                            break
+                        else:
                             print("Retrying...")
                             time.sleep(2)
+
                 key = ""
                 url = "http://127.0.0.1:8000/v1/chat/completions"
                 time_out = 60
                 s_state = f"Cog-{cogmod}"
+
             return key, url, time_out, s_state
         
         download_button.click(download_snapshot, inputs=[models_select, acceleration_select],outputs=download_button)
