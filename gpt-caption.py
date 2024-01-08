@@ -567,12 +567,9 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                         except (socket.timeout, ConnectionRefusedError):
                             print("Retrying...")
                             time.sleep(2)
-                    key = ""
-                    url = "http://127.0.0.1:8000/v1/chat/completions"
-                    time_out = 60
-                key = api_key_input
-                url = api_url_input
-                time_out = timeout_input
+                key = ""
+                url = "http://127.0.0.1:8000/v1/chat/completions"
+                time_out = 60
                 s_state = f"Cog-{cogmod}"
             return key, url, time_out, s_state
         
