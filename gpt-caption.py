@@ -1,6 +1,5 @@
 import base64
 import csv
-from pickle import TRUE
 import requests
 import json
 import os
