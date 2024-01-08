@@ -8,6 +8,8 @@ Developers: Jiaye, [LEOSAM是只兔狲](https://civitai.com/user/LEOSAM), [Sleee
 这是一款利用 GPT-4-vision API 为图像打标的简易工具。
 使用 Gradio 构建，部分代码由 GPT 辅助生成。
 
+引入了CogVLM部分，可以一键安装并启动CogVLM的本地API进行打标，[CogVLM项目地址](https://github.com/THUDM/CogVLM)。
+
 ![1 (2)](https://github.com/jiayev/GPT4V-Image-Captioner/assets/16369810/fa98e5db-8247-4f20-a9f5-b056c31209d6)
 
 # Installation and Startup Guide
