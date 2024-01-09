@@ -220,6 +220,62 @@ def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode
     print(f"Processing complete. Total images processed: {len(results)}")
     return results
 
+def process_batch_watermark_detection(api_key, prompt, api_url, image_dir, detect_file_handling_mode, quality, timeout,watermark_dir):
+    should_stop.clear()
+    save_api_details(api_key, api_url)
+    results = []
+    prompt = '图片有水印吗'
+
+    supported_image_formats = ('.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif', '.tiff', '.tif')
+    image_files = []
+    for root, dirs, files in os.walk(image_dir):
+        for file in files:
+            if file.lower().endswith(supported_image_formats):
+                image_files.append(os.path.join(root, file))
+    def process_image(filename, detect_file_handling_mode, watermark_dir):
+        image_path = os.path.join(image_dir, filename)
+        caption = run_openai_api(image_path, prompt, api_key, api_url, quality, timeout)
+
+        if caption.startswith("Error:") or caption.startswith("API error:"):
+            return "error"
+
+        #EOI是cog迷之误判？
+        if 'Yes,' in caption and '\'EOI\'' not in caption:
+            if detect_file_handling_mode == "copy/复制":
+                shutil.copy(filename, watermark_dir)
+            if detect_file_handling_mode == "move/移动":
+                shutil.move(filename, watermark_dir)
+
+
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        futures = {}
+        for filename in image_files:
+            future = executor.submit(process_image, filename, detect_file_handling_mode, watermark_dir)
+            futures[future] = filename  # 将 future 和 filename 映射起来
+        progress = tqdm(total=len(futures), desc="Processing images")
+
+        try:
+            for future in concurrent.futures.as_completed(futures):
+                filename = futures[future]  # 获取正在处理的文件名
+                if should_stop.is_set():
+                    for f in futures:
+                        f.cancel()
+                    print("Batch processing was stopped by the user.")
+                    break
+                try:
+                    result = future.result()
+                except Exception as e:
+                    result = (filename, f"An exception occurred: {e}")
+                    print(f"An exception occurred while processing {filename}: {e}")
+                results.append(result)
+                progress.update(1)
+        finally:
+            progress.close()
+            executor.shutdown(wait=False)
+
+    results = f"Total checked images: {len(results)}"
+    return results
 # 运行批处理
 saved_api_key, saved_api_url = get_saved_api_details()
 
@@ -481,8 +537,26 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             fn=process_images_in_folder, 
             inputs=[folder_path_input], 
             outputs=[image_processing_output]
-        )  
-    
+        )
+
+    with gr.Tab("Watermark Detection / 批量图像水印检测"):
+        gr.Markdown("""
+                本功能完全是基于CogVLM开发（GPT4未经测试），极力推荐使用CogVLM-vqa以达到最佳效果。\n
+                This function is fully developed based on CogVLM (GPT4 not tested), and it is strongly recommended to use CogVLM-vqa for optimal results.
+                """)
+        with gr.Row():
+            detect_batch_dir_input = gr.Textbox(label="Batch Directory / 批量目录",
+                                             placeholder="Enter the directory path containing images for batch processing")
+        with gr.Row():
+            batch_detect_submit = gr.Button("Batch Detect Images / 批量检测图像", variant='primary')
+        with gr.Row():
+            watermark_dir = gr.Textbox(label="Watermark Detected Image Directory / 检测到水印的图片目录", placeholder="Enter the directory path to move/copy detected images")
+            detect_file_handling_mode = gr.Radio(choices=["move/移动", "copy/复制"], value="move/移动", label="If watermark is detected / 如果图片检测到水印 ")
+        with gr.Row():
+            detect_batch_output = gr.Textbox(label="Output / 结果")
+        with gr.Row():
+                detect_stop_button = gr.Button("Stop Batch Processing / 停止批量处理")
+                detect_stop_button.click(stop_batch_processing, inputs=[], outputs=detect_batch_output)
     # CogVLM一键
     with gr.Tab("CogVLM Config / CogVLM配置"):
         with gr.Row():    
@@ -579,6 +653,11 @@ with gr.Blocks(title="GPT4V captioner") as demo:
     def batch_process(api_key, api_url, prompt, batch_dir, file_handling_mode, quality, timeout):
         process_batch_images(api_key, prompt, api_url, batch_dir, file_handling_mode, quality, timeout)
         return "Batch processing complete. Captions saved or updated as '.txt' files next to images."
+
+    def batch_detect(api_key, api_url, prompt, batch_dir, detect_file_handling_mode, quality, timeout, watermark_dir):
+        results = process_batch_watermark_detection(api_key, prompt, api_url, batch_dir, detect_file_handling_mode, quality, timeout,
+                                          watermark_dir)
+        return results
     
     def caption_image(api_key, api_url, prompt, image, quality, timeout):
         if image:
@@ -589,6 +668,12 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         batch_process, 
         inputs=[api_key_input, api_url_input, prompt_input, batch_dir_input, file_handling_mode, quality, timeout_input],
         outputs=batch_output
+    )
+    batch_detect_submit.click(
+        batch_detect,
+        inputs=[api_key_input, api_url_input, prompt_input, detect_batch_dir_input, detect_file_handling_mode, quality,
+                timeout_input,watermark_dir],
+        outputs=detect_batch_output
     )
 
     gr.Markdown("### Developers: Jiaye,&nbsp;&nbsp;[LEOSAM 是只兔狲](https://civitai.com/user/LEOSAM),&nbsp;&nbsp;[SleeeepyZhou](https://space.bilibili.com/360375877),&nbsp;&nbsp;[Fok](https://civitai.com/user/fok3827)&nbsp;&nbsp;|&nbsp;&nbsp;Welcome everyone to add more new features to this project.")
