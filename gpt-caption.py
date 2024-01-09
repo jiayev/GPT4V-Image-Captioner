@@ -102,7 +102,6 @@ def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=1
         "max_tokens": 300
     }
     
-    # print(data)
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}"
@@ -201,7 +200,7 @@ def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode
         
         try:
             for future in concurrent.futures.as_completed(futures):
-                filename = futures[future]  # 获取正在处理的文件名
+                filename = futures[future]  
                 if should_stop.is_set():
                     for f in futures:
                         f.cancel()
@@ -223,9 +222,6 @@ def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode
 
 # 运行批处理
 saved_api_key, saved_api_url = get_saved_api_details()
-# 确保在这里设置正确的参数
-# results = process_batch_images(saved_api_key, "Your prompt here", saved_api_url, "Your image directory here", "Your file handling mode here", "auto")
-# 上面这一行似乎是多余的？我先注释掉了 - Jiaye
 
 def run_script(folder_path, keywords):
     keywords = keywords if keywords else "sorry,error"
@@ -316,7 +312,7 @@ def translate_tags(tags, api_key, api_url):
             index = future_to_index[future]  # 获取未来对象对应的原始标签索引
             translations[index] = future.result()  # 使用索引来放置翻译结果，保持与原始标签的顺序
 
-    session.close()  # 关闭会话
+    session.close()
     return translations
 
 def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, insert_position, translate, api_key, api_url):
@@ -357,7 +353,6 @@ def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, i
     # 生成网络图
     network_graph_path = generate_network_graph(folder_path, top_n)
     
-    # 返回结果
     return tag_counts_with_translation, wordcloud_path, network_graph_path, "Tags processed successfully."
 
 
@@ -403,7 +398,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         with gr.Row():
             single_image_submit = gr.Button("Caption Single Image / 图片打标", variant='primary')
         
-    with gr.Tab("Batch Image Processing / 批量图像处理"):
+    with gr.Tab("Batch Image Processing / 多图批处理"):
         with gr.Row():
             batch_dir_input = gr.Textbox(label="Batch Directory / 批量目录", placeholder="Enter the directory path containing images for batch processing")
         with gr.Row():
@@ -421,7 +416,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
 
     with gr.Tab("Failed Tagging File Screening / 打标失败文件筛查"):
         folder_input = gr.Textbox(label="Folder Input / 文件夹输入", placeholder="Enter the directory path")
-        keywords_input = gr.Textbox(placeholder="Enter keywords, e.g., sorry,error / 请输入关键词，例如：sorry,error", label="Keywords (optional) / 检索关键词（可选）")
+        keywords_input = gr.Textbox(placeholder="Enter keywords, e.g., sorry,error / 请输入检索关键词，例如：sorry,error", label="Keywords (optional) / 检索关键词（可选）")
         run_button = gr.Button("Run Script / 运行脚本", variant='primary')
         output_area = gr.Textbox(label="Script Output / 脚本输出")
         
