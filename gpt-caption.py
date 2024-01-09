@@ -545,13 +545,13 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                 This function is fully developed based on CogVLM (GPT4 not tested), and it is strongly recommended to use CogVLM-vqa for optimal results.
                 """)
         with gr.Row():
-            detect_batch_dir_input = gr.Textbox(label="Batch Directory / 批量目录",
+            detect_batch_dir_input = gr.Textbox(label="Image Directory / 图片目录",
                                              placeholder="Enter the directory path containing images for batch processing")
-        with gr.Row():
-            batch_detect_submit = gr.Button("Batch Detect Images / 批量检测图像", variant='primary')
         with gr.Row():
             watermark_dir = gr.Textbox(label="Watermark Detected Image Directory / 检测到水印的图片目录", placeholder="Enter the directory path to move/copy detected images")
             detect_file_handling_mode = gr.Radio(choices=["move/移动", "copy/复制"], value="move/移动", label="If watermark is detected / 如果图片检测到水印 ")
+        with gr.Row():
+            batch_detect_submit = gr.Button("Batch Detect Images / 批量检测图像", variant='primary')
         with gr.Row():
             detect_batch_output = gr.Textbox(label="Output / 结果")
         with gr.Row():
