@@ -29,8 +29,10 @@ mod_chat = './models/cogagent-chat-hf'
 
 if mod == "vqa":
     MODEL_PATH = mod_vqa
+    language_processor_version = "chat_old"
 else:
     MODEL_PATH = mod_chat
+    language_processor_version = "chat"
 
 TOKENIZER_PATH = os.environ.get("TOKENIZER_PATH", 'lmsys/vicuna-7b-v1.5')
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -391,7 +393,9 @@ async def shutdown():
 if __name__ == "__main__":
     tokenizer = LlamaTokenizer.from_pretrained(
         TOKENIZER_PATH,
-        trust_remote_code=True)
+        trust_remote_code=True,
+        signal_type=language_processor_version
+    )
 
     if torch.cuda.is_available() and torch.cuda.get_device_capability()[0] >= 8:
         torch_type = torch.bfloat16
