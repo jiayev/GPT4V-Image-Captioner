@@ -396,7 +396,7 @@ def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, i
         """截断过长的标签名称，只保留前max_length个字符，并在末尾添加省略号"""
         return (tag[:max_length] + '...') if len(tag) > max_length else tag
 
-    if translate:
+    if translate[:3] == 'GPT':
         tags_to_translate = [tag for tag, _ in tag_counts]
         translations = translate_tags(tags_to_translate, api_key, api_url)
         # 确保 translations 列表长度与 tag_counts 一致
@@ -413,6 +413,8 @@ def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, i
 
 
 os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
+
+
 
 
 with gr.Blocks(title="GPT4V captioner") as demo:
@@ -447,14 +449,14 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         load_prompt_button.click(update_textbox, inputs=saved_prompts_dropdown, outputs=prompt_input)
         delete_prompt_button.click(delete_prompt, inputs=saved_prompts_dropdown, outputs=saved_prompts_dropdown)
     
-    with gr.Tab("Single Image Processing / 单图处理"):
+    with gr.Tab("Single Image / 单图处理"):
         with gr.Row():
             image_input = gr.Image(type='filepath', label="Upload Image / 上传图片")
             single_image_output = gr.Textbox(label="Caption Output / 标签输出")
         with gr.Row():
             single_image_submit = gr.Button("Caption Single Image / 图片打标", variant='primary')
         
-    with gr.Tab("Batch Image Processing / 多图批处理"):
+    with gr.Tab("Batch Image / 多图批处理"):
         with gr.Row():
             batch_dir_input = gr.Textbox(label="Batch Directory / 批量目录", placeholder="Enter the directory path containing images for batch processing")
         with gr.Row():
@@ -470,7 +472,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             stop_button = gr.Button("Stop Batch Processing / 停止批量处理")
             stop_button.click(stop_batch_processing, inputs=[], outputs=batch_output)
 
-    with gr.Tab("Failed Tagging File Screening / 打标失败文件筛查"):
+    with gr.Tab("Failed File Screening / 打标失败文件筛查"):
         folder_input = gr.Textbox(label="Folder Input / 文件夹输入", placeholder="Enter the directory path")
         keywords_input = gr.Textbox(placeholder="Enter keywords, e.g., sorry,error / 请输入检索关键词，例如：sorry,error", label="Keywords (optional) / 检索关键词（可选）")
         run_button = gr.Button("Run Script / 运行脚本", variant='primary')
@@ -478,12 +480,12 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         
         run_button.click(fn=run_script, inputs=[folder_input, keywords_input], outputs=output_area)
 
-    with gr.Tab("Tag Processing / 标签处理"):
+    with gr.Tab("Tag Manage / 标签处理"):
         
         with gr.Row():
             folder_path_input = gr.Textbox(label="Folder Path / 文件夹路径", placeholder="Enter folder path / 在此输入文件夹路径")
             top_n_input = gr.Number(label="Top N Tags / Top N 标签", value=100)
-            translate_tags_checkbox = gr.Checkbox(label="使用GPT3.5翻译标签为中文", value=False)  # 新增翻译复选框
+            translate_tags_input = gr.Radio(label="翻译标签",choices=["GPT / 使用GPT3.5翻译标签","不翻译"], value="不翻译")  # 新增翻译复选框，24.1.10更新翻译选择
             process_tags_button = gr.Button("Process Tags / 处理标签", variant='primary')
             output_message = gr.Textbox(label="Output Message / 输出信息", interactive=False)
 
@@ -505,13 +507,13 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             inputs=[
                 folder_path_input, top_n_input, tags_to_remove_input, 
                 tags_to_replace_input, new_tag_input, insert_position_input, 
-                translate_tags_checkbox,  # 新增翻译复选框
+                translate_tags_input,  # 新增翻译复选框
                 api_key_input, api_url_input
             ],
             outputs=[tag_counts_output, wordcloud_output, network_graph_output, output_message]
         )
 
-    with gr.Tab("Image Precompression / 图像预压缩"):
+    with gr.Tab("Image Zip / 图像预压缩"):
         with gr.Row():
             folder_path_input = gr.Textbox(
                 label="Image Folder Path / 图像文件夹路径", 
@@ -539,7 +541,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             outputs=[image_processing_output]
         )
 
-    with gr.Tab("Watermark Detection / 批量图像水印检测"):
+    with gr.Tab("Watermark Detection / 批量水印检测"):
         gr.Markdown("""
                 本功能完全是基于CogVLM开发（GPT4未经测试），极力推荐使用CogVLM-vqa以达到最佳效果。\n
                 This function is fully developed based on CogVLM (GPT4 not tested), and it is strongly recommended to use CogVLM-vqa for optimal results.
@@ -563,10 +565,10 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             gr.Markdown("""
         ⚠ **Warning / 警告**: This is the CogVLM configuration page. To use CogVLM, you need to download it, which is approximately 35g+ in size and takes a long time (really, really long).
                         In addition, in terms of model selection, the vqa model performs better but slower, while the chat model is faster but slightly weaker.
-                        Please confirm that your GPU has sufficient graphics memory (approximately 14g ±) when using CogVLM
+                        Please confirm that your GPU has sufficient graphics memory (approximately 12g ±) when using CogVLM
 
         此为CogVLM配置页面，使用CogVLM需要配置相关环境并下载模型，大小约为35g+，需要较长时间（真的很长）。模型选择上，vqa模型效果更好但是更慢，chat模型更快但是效果略弱。
-        使用CogVLM请确认自己的显卡有足够的显存（约14g±）
+        使用CogVLM请确认自己的显卡有足够的显存（约12g±）
             """)
             
         with gr.Row(): 
