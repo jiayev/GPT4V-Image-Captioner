@@ -2,7 +2,6 @@
 
 [英文版说明](https://github.com/jiayev/GPT4V-Image-Captioner/blob/main/README.md)
 
-开发者: Jiaye, [LEOSAM是只兔狲](https://civitai.com/user/LEOSAM), [SleeeepyZhou](https://space.bilibili.com/360375877), [Fok](https://civitai.com/user/fok3827)，GPT4。 欢迎大家加入对本项目的进一步改进.
 
 这是一款使用 Gradio 构建，可使用GPT-4-vision API或[cogVLM](https://github.com/THUDM/CogVLM)模型进行图像打标的多功能图像处理工具箱。特色功能包括：
 
@@ -12,6 +11,9 @@
 - 可视化标签分析与处理
 - 图像分桶预压缩
 - 关键词筛查及水印图像识别
+
+开发者: Jiaye, [LEOSAM是只兔狲](https://civitai.com/user/LEOSAM), [SleeeepyZhou](https://space.bilibili.com/360375877), [Fok](https://civitai.com/user/fok3827)，GPT4。 欢迎大家加入对本项目的进一步改进.
+
 
 ![下载](https://github.com/jiayev/GPT4V-Image-Captioner/assets/16369810/90612e2b-aac1-4368-84d6-482bb660f5aa)
 
