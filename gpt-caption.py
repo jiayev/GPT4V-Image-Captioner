@@ -22,6 +22,8 @@ import textwrap  # Import the textwrap module to help with wrapping text
 from huggingface_hub import snapshot_download
 import socket
 
+import platform
+
 def unique_elements(original, addition):
     original_list = list(map(str.strip, original.split(',')))
     addition_list = list(map(str.strip, addition.split(',')))
@@ -601,12 +603,16 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                 
         def install_cog(acceleration):
             if acceleration == 'CN':
-                ps1_script_path = './install_script/installcog-cn.ps1'
+                script_path = './install_script/installcog-cn'
             else:
-                ps1_script_path = './install_script/installcog.ps1'
-            powershell_command = f'powershell -ExecutionPolicy Bypass -File "{ps1_script_path}"'
+                script_path = './install_script/installcog'
+            
+            if platform.system() == "Windows":
+                install_command = f'powershell -ExecutionPolicy Bypass -File "{script_path}.ps1"'
+            else:
+                install_command = f'bash "{script_path}.sh"'
             try:
-                subprocess.run(powershell_command, check=True, shell=True)
+                subprocess.run(install_command, check=True, shell=True)
             except subprocess.CalledProcessError as e:
                 print(f'Error: {e}')
                 
