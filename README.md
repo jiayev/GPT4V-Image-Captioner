@@ -1,7 +1,6 @@
 # GPT4V-Image-Captioner / GPT4V图像打标器
 
 [中文版说明](https://github.com/jiayev/GPT4V-Image-Captioner/blob/main/README-CN.md)
-[英文版说明](https://github.com/jiayev/GPT4V-Image-Captioner/blob/main/README-EN.md)
 
 This is a multifunctional image processing toolbox built with Gradio, capable of labeling images using the GPT-4-vision API or the [cogVLM](https://github.com/THUDM/CogVLM) model. Key features include:
 
