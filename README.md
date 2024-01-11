@@ -11,7 +11,7 @@ This is a multifunctional image processing toolbox built with Gradio, capable of
 - Image pre-compression
 - Keyword filtering and watermark image recognition
 
-Developers: Jiaye, [LEOSAM是只兔狲](https://civitai.com/user/LEOSAM), [SleeeepyZhou](https://space.bilibili.com/360375877), [Fok](https://civitai.com/user/fok3827), GPT4. Welcome everyone to add more new features to this project.
+Developers: [Jiaye](https://civitai.com/user/jiayev1), [LEOSAM是只兔狲](https://civitai.com/user/LEOSAM), [SleeeepyZhou](https://space.bilibili.com/360375877), [Fok](https://civitai.com/user/fok3827), GPT4. Welcome everyone to add more new features to this project.
 
 ![下载](https://github.com/jiayev/GPT4V-Image-Captioner/assets/16369810/90612e2b-aac1-4368-84d6-482bb660f5aa)
 
