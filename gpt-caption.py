@@ -226,7 +226,7 @@ def process_batch_watermark_detection(api_key, prompt, api_url, image_dir, detec
     should_stop.clear()
     save_api_details(api_key, api_url)
     results = []
-    prompt = '图片有水印吗'
+    prompt = 'Is image have watermark'
 
     supported_image_formats = ('.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif', '.tiff', '.tif')
     image_files = []
