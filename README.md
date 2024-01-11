@@ -2,13 +2,13 @@
 
 [中文版说明](https://github.com/jiayev/GPT4V-Image-Captioner/blob/main/README-CN.md)
 
-This is a multifunctional image processing toolbox built with Gradio, capable of labeling images using the GPT-4-vision API or the [cogVLM](https://github.com/THUDM/CogVLM) model. Key features include:
+This is a multifunctional image processing toolbox built with Gradio, capable of tagging images using the GPT-4-vision API or the [cogVLM](https://github.com/THUDM/CogVLM) model. Key features include:
 
 - One-click installation and use
-- Single image reverse search and batch labeling
-- Choice of cloud-based GPT4 & local CogVLM models
+- Single image and multi-image batch tagging
+- Choice of online GPT4 & local CogVLM models
 - Visual tag analysis and processing
-- Image bucketing for pre-compression
+- Image pre-compression
 - Keyword filtering and watermark image recognition
 
 Developers: Jiaye, [LEOSAM是只兔狲](https://civitai.com/user/LEOSAM), [SleeeepyZhou](https://space.bilibili.com/360375877), [Fok](https://civitai.com/user/fok3827)，GPT4. Welcome everyone to add more new features to this project.
