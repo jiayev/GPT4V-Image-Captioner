@@ -12,7 +12,7 @@
 - 图像分桶预压缩
 - 关键词筛查及水印图像识别
 
-开发者: Jiaye, [LEOSAM是只兔狲](https://civitai.com/user/LEOSAM), [SleeeepyZhou](https://space.bilibili.com/360375877), [Fok](https://civitai.com/user/fok3827), GPT4。 欢迎大家加入对本项目的进一步改进.
+开发者: Jiaye, [LEOSAM是只兔狲](https://civitai.com/user/LEOSAM), [SleeeepyZhou](https://space.bilibili.com/360375877), [Fok](https://civitai.com/user/fok3827), GPT4。 欢迎有兴趣的朋友加入，对本项目进行进一步的完善改进.
 
 
 ![下载](https://github.com/jiayev/GPT4V-Image-Captioner/assets/16369810/90612e2b-aac1-4368-84d6-482bb660f5aa)
