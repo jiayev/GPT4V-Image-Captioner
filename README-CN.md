@@ -1,5 +1,7 @@
 # GPT4V-Image-Captioner / GPT4V图像打标器
 
+[软件安装&演示视频](https://www.bilibili.com/video/BV1pw411g7X1/?spm_id_from=333.999.0.0&vd_source=22436c5073194cf38787049c34e04e02)
+
 [英文版说明](https://github.com/jiayev/GPT4V-Image-Captioner/blob/main/README.md)
 
 
@@ -14,7 +16,6 @@
 
 开发者: Jiaye, [LEOSAM是只兔狲](https://civitai.com/user/LEOSAM), [SleeeepyZhou](https://space.bilibili.com/360375877), [Fok](https://civitai.com/user/fok3827), GPT4。 欢迎有兴趣的朋友加入，对本项目进行进一步的完善改进。
 
-[软件安装&演示视频](https://www.bilibili.com/video/BV1pw411g7X1/?spm_id_from=333.999.0.0&vd_source=22436c5073194cf38787049c34e04e02)
 
 ![下载](https://github.com/jiayev/GPT4V-Image-Captioner/assets/16369810/90612e2b-aac1-4368-84d6-482bb660f5aa)
 
