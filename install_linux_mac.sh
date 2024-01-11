@@ -21,7 +21,7 @@ source myenv/bin/activate
 pip install --upgrade pip
 
 # Install necessary Python libraries
-pip install -r requirements.txt
+pip install -r ./install_script/requirements.txt
 
 # Run Python script (script name is gpt-caption.py)
 python3 gpt-caption.py
