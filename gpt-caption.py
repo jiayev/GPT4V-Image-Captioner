@@ -442,7 +442,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         saved_prompts = get_prompts_from_csv()
         saved_prompts_dropdown = gr.Dropdown(label="Saved Prompts / 提示词存档", choices=saved_prompts, type="value", interactive=True)
         def update_textbox(prompt):
-                return gr.Textbox(value=prompt)
+                return prompt
         with gr.Row():
             save_prompt_button = gr.Button("Save Prompt / 保存提示词")
             delete_prompt_button = gr.Button("Delete Prompt / 删除提示词")
