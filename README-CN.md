@@ -9,7 +9,7 @@
 
 - 一键安装及使用
 - 单图反推及批量打标功能
-- 云端GPT4 & 本地CogVLM双模型可选
+- 云端GPT4V & 本地CogVLM双模型可选
 - 可视化标签分析与处理
 - 图像分桶预压缩
 - 关键词筛查及水印图像识别
@@ -30,7 +30,7 @@
     git clone https://github.com/jiayev/GPT4V-Image-Captioner
     ```
 3. 双击 `install_windows.bat` 运行，并安装所有必要的依赖项。
-4. 安装完成后，您可以通过双击 `Start_windows.bat`来在终端中启动GPT4V-Image-Captioner。
+4. 安装完成后，您可以通过双击 `start_windows.bat`来在终端中启动GPT4V-Image-Captioner。
 5. 按住ctrl并点击终端中的URL地址（或复制URL地址在浏览器打开），将在默认浏览器中跳转打开Gradio应用界面。
 6. 请在界面最上方输入OpenAI官方或者第三方的GPT-4V API Key与API Url，设置图像地址后，就可以图像打标了。
 
@@ -56,7 +56,7 @@
     ```
 6. 在终端中执行启动脚本来启动GPT4V-Image-Captioner。
     ```
-    ./Start_linux_mac.sh
+    ./start_linux_mac.sh
     ```
 7. 复制终端中显示的URL地址，在浏览器中打开Gradio应用界面。
 8. 请在界面最上方输入OpenAI官方或者第三方的GPT-4V API Key与API Url，设置图像地址后，就可以图像打标了。
