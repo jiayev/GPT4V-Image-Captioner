@@ -24,6 +24,27 @@ import socket
 
 import platform
 
+#扩展prompt {} 标记功能，从文件读取额外内容
+def addition_prompt_process(prompt, image_path):
+    # 从image_path分离文件名和扩展名，并更改扩展名为.txt
+    if '{' not in prompt and '}' not in prompt:
+        return prompt
+    file_root, _ = os.path.splitext(image_path)
+    new_file_name = os.path.basename(file_root) + ".txt"
+    # 从prompt中提取目录路径
+    directory_path = prompt[prompt.find('{') + 1: prompt.find('}')]
+    # 拼接新的文件路径
+    full_path = os.path.join(directory_path, new_file_name)
+    # 读取full_path指定的文件内容
+    try:
+        with open(full_path, 'r') as file:
+            file_content = file.read()
+    except Exception as e:
+        return f"Error reading file: {e}"
+
+    new_prompt = prompt.replace('{' + directory_path + '}', file_content)
+    return new_prompt
+
 def unique_elements(original, addition):
     original_list = list(map(str.strip, original.split(',')))
     addition_list = list(map(str.strip, addition.split(',')))
@@ -83,6 +104,8 @@ def save_api_details(api_key, api_url):
             json.dump(settings, f)
 
 def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=10):
+    prompt = addition_prompt_process(prompt, image_path)
+    # print("prompt{}:",prompt)
     with open(image_path, "rb") as image_file:
         image_base64 = base64.b64encode(image_file.read()).decode('utf-8')
     
@@ -437,7 +460,8 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                               value="As an AI image tagging expert, please provide precise tags for these images to enhance CLIP model's understanding of the content. Employ succinct keywords or phrases, steering clear of elaborate sentences and extraneous conjunctions. Prioritize the tags by relevance. Your tags should capture key elements such as the main subject, setting, artistic style, composition, image quality, color tone, filter, and camera specifications, and any other tags crucial for the image. When tagging photos of people, include specific details like gender, nationality, attire, actions, pose, expressions, accessories, makeup, composition type, age, etc. For other image categories, apply appropriate and common descriptive tags as well. Recognize and tag any celebrities, well-known landmark or IPs if clearly featured in the image. Your tags should be accurate, non-duplicative, and within a 20-75 word count range. These tags will use for image re-creation, so the closer the resemblance to the original image, the better the tag quality. Tags should be comma-separated. Exceptional tagging will be rewarded with $10 per image.",
                               placeholder="Enter a descriptive prompt",
                               lines=5)
-                              
+
+
     with gr.Accordion("Prompt Saving / 提示词存档",open=False):
         saved_prompts = get_prompts_from_csv()
         saved_prompts_dropdown = gr.Dropdown(label="Saved Prompts / 提示词存档", choices=saved_prompts, type="value", interactive=True)
