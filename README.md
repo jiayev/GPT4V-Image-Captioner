@@ -6,7 +6,7 @@ This is a multifunctional image processing toolbox built with Gradio, capable of
 
 - One-click installation and use
 - Single image and multi-image batch tagging
-- Choice of online GPT4 & local CogVLM models
+- Choice of online GPT4V & local CogVLM models
 - Visual tag analysis and processing
 - Image pre-compression
 - Keyword filtering and watermark image recognition
@@ -26,7 +26,7 @@ Developers: [Jiaye](https://civitai.com/user/jiayev1), [LEOSAM是只兔狲](http
     git clone https://github.com/jiayev/GPT4V-Image-Captioner
     ```
 3. Double-click `install_windows.bat` to run and install all necessary dependencies.
-4. After the installation is complete, you can launch the GPT4V-Image-Captioner by double-clicking `install_windows.bat`.
+4. After the installation is complete, you can launch the GPT4V-Image-Captioner by double-clicking `start_windows.bat`.
 5. Hold down Ctrl and click on the URL in the terminal (or copy the URL to your browser), which will open the Gradio app interface in your default browser.
 6. Enter the official OpenAI or third-party GPT-4V API Key and API Url at the top of the interface. After setting the image address, you can start tagging the image.
 
@@ -55,22 +55,6 @@ Developers: [Jiaye](https://civitai.com/user/jiayev1), [LEOSAM是只兔狲](http
     ```
 7. Copy the URL displayed in the terminal and open it in your browser to access the Gradio app interface.
 8. Enter the official OpenAI or third-party GPT-4V API Key and API Url at the top of the interface. After setting the image address, you can start tagging the image.
-
-
-## Change Log
-
-### January 2, 2024
-- **One-Click Install & Launch**: Added one-click installation (`install_windows.bat` / `install_linux_mac.sh`) and launch (`Start_windows.bat` / `Start_linux_mac.sh`) features, simplifying the setup and startup process.
-- **Environment Setup Instructions**: Supplemented the installation and launch instructions for the program under Windows and Linux environments.
-
-### January 1, 2024
-- **Speed Optimization**: Improved the speed of tagging images. Now annotations can be completed within 2-3 seconds.
-- **Tag Management**: Provided different handling options for images with existing tags: "Overwrite", "Prepend", "Append", and "Skip".
-- **Subfolder Processing**: The new program can now process all image files within folders and subfolders, supporting formats like '.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif', '.tiff', '.tif'.
-- **Interruption Feature**: Added the ability to interrupt the batch tagging process.
-- **Error Screening**: Images that fail GPT tagging (e.g., NSFW content) can be moved to a new folder based on keywords.
-- **Localization**: Added support for the Chinese language.
-
 
 ### Windows Manual Installation Instructions
 
@@ -107,9 +91,9 @@ Developers: [Jiaye](https://civitai.com/user/jiayev1), [LEOSAM是只兔狲](http
     python -m pip install --upgrade pip
     ```
 
-8. Install the `requests`, `gradio`, and `tqdm` libraries within the virtual environment:
+8. Install libraries within the virtual environment:
     ```
     pip install scipy networkx wordcloud matplotlib Pillow tqdm gradio requests
     ```
 
-9. After completing the steps above, you can start GPT4V-Image-Captioner by double-clicking the `Start_windows.bat` file.
+9. After completing the steps above, you can start GPT4V-Image-Captioner by double-clicking the `start_windows.bat` file.
