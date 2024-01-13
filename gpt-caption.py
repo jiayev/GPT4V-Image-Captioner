@@ -673,7 +673,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
 
                 key = ""
                 url = "http://127.0.0.1:8000/v1/chat/completions"
-                time_out = 60
+                time_out = 300
                 s_state = f"Cog-{cogmod}"
 
             return key, url, time_out, s_state
