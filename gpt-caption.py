@@ -387,9 +387,9 @@ def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, i
     network_graph_path = generate_network_graph(folder_path, top)
 
     # 翻译Tag功能
-    if translate[:3] == 'GPT-3.5 translation / GPT3.5翻译':
+    if translate.startswith('GPT-3.5 translation / GPT3.5翻译'):
         translator = Translator.GPTTranslator(api_key, api_url)
-    elif translate[:4] == 'Free translation / 免费翻译':
+    elif translate.startswith('Free translation / 免费翻译'):
         translator = Translator.ChineseTranslator()
     else:
         translator = None 
