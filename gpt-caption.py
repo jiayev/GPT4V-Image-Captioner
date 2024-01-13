@@ -363,11 +363,11 @@ def get_prompts_from_csv():
 saves_folder = "."
 
 def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, insert_position, translate, api_key, api_url):
-    # 解析删除标签列表
+    # 解析删除标签
     tags_to_remove_list = tags_to_remove.split(',') if tags_to_remove else []
     tags_to_remove_list = [tag.strip() for tag in tags_to_remove_list]
     
-    # 解析替换标签为字典格式
+    # 解析替换标签
     tags_to_replace_dict = {}
     if tags_to_replace:
         try:
@@ -378,35 +378,34 @@ def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, i
             return "Error: Tags to replace must be in 'old_tag:new_tag' format separated by commas", None, None
 
     # 修改文件夹中的标签
-    modify_message = modify_tags_in_folder(folder_path, tags_to_remove_list, tags_to_replace_dict, new_tag, insert_position)
+    modify_tags_in_folder(folder_path, tags_to_remove_list, tags_to_replace_dict, new_tag, insert_position)
 
-    # 在修改标签后重新计算标签并生成词云
-    tag_counts = count_tags_in_folder(folder_path, top_n)
-
+    # 词云
+    top = int(top_n)
+    tag_counts = count_tags_in_folder(folder_path, top)
+    # 截断过长的标签名称，只保留前max_length个字符，并在末尾添加省略号
     def truncate_tag(tag, max_length=30):
-        """截断过长的标签名称，只保留前max_length个字符，并在末尾添加省略号"""
         return (tag[:max_length] + '...') if len(tag) > max_length else tag
+    wordcloud_path = generate_wordcloud(tag_counts)
+    network_graph_path = generate_network_graph(folder_path, top)
 
+
+    # 翻译Tag功能
     if translate[:3] == 'GPT':
         translator = translator.GPTTranslator(api_key, api_url)
     elif translate[:4] == 'Free':
         translator = translator.ChineseTranslator()
     else:
         translator = None 
-
     if translator:
         tags_to_translate = [tag for tag, _ in tag_counts]
         translations = translator.translate_tags(translator, tags_to_translate)
-        
         # 确保 translations 列表长度与 tag_counts 一致
         translations.extend(["" for _ in range(len(tag_counts) - len(translations))])
         tag_counts_with_translation = [(truncate_tag(tag_counts[i][0]), tag_counts[i][1], translations[i]) for i in range(len(tag_counts))]
     else:
         tag_counts_with_translation = [(truncate_tag(tag), count, "") for tag, count in tag_counts]
 
-    wordcloud_path = generate_wordcloud(tag_counts)
-    # 生成网络图
-    network_graph_path = generate_network_graph(folder_path, top_n)
     
     return tag_counts_with_translation, wordcloud_path, network_graph_path, "Tags processed successfully."
 
