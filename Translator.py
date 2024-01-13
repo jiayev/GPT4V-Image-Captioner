@@ -11,7 +11,6 @@ class ChineseTranslator:
         if not text:
             return None
 
-        to_lang = to_lang.replace("-CN", "").replace("-TW", "")
         payload = {
             "appid": "105",
             "sgid": "en",

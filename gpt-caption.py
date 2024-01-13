@@ -392,14 +392,14 @@ def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, i
 
     # 翻译Tag功能
     if translate[:3] == 'GPT':
-        translator = translator.GPTTranslator(api_key, api_url)
+        translator = Translator.GPTTranslator(api_key, api_url)
     elif translate[:4] == 'Free':
-        translator = translator.ChineseTranslator()
+        translator = Translator.ChineseTranslator()
     else:
         translator = None 
     if translator:
         tags_to_translate = [tag for tag, _ in tag_counts]
-        translations = translator.translate_tags(translator, tags_to_translate)
+        translations = Translator.translate_tags(translator, tags_to_translate)
         # 确保 translations 列表长度与 tag_counts 一致
         translations.extend(["" for _ in range(len(tag_counts) - len(translations))])
         tag_counts_with_translation = [(truncate_tag(tag_counts[i][0]), tag_counts[i][1], translations[i]) for i in range(len(tag_counts))]
