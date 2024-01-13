@@ -18,12 +18,9 @@ from urllib3.util.retry import Retry
 from ImgProcessing import process_images_in_folder
 from Tag_Processor import count_tags_in_folder, generate_wordcloud, modify_tags_in_folder, generate_network_graph
 import textwrap  # Import the textwrap module to help with wrapping text
-
 from huggingface_hub import snapshot_download
 import socket
-
 import platform
-
 import Translator
 
 #扩展prompt {} 标记功能，从文件读取额外内容
@@ -372,8 +369,8 @@ def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, i
     if tags_to_replace:
         try:
             for pair in tags_to_replace.split(','):
-                old_tag, new_tag_pair = pair.split(':')
-                tags_to_replace_dict[old_tag.strip()] = new_tag_pair.strip()
+                old_tag, new_replacement_tag = pair.split(':')
+                tags_to_replace_dict[old_tag.strip()] = new_replacement_tag.strip()
         except ValueError:
             return "Error: Tags to replace must be in 'old_tag:new_tag' format separated by commas", None, None
 
@@ -411,8 +408,6 @@ def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, i
 
 
 os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
-
-
 
 
 with gr.Blocks(title="GPT4V captioner") as demo:
@@ -492,7 +487,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             tags_to_remove_input = gr.Textbox(label="Tags to Remove / 删除标签", placeholder="Enter tags to remove, separated by commas / 输入要删除的标签，用逗号分隔", lines=3)
             tags_to_replace_input = gr.Textbox(label="Tags to Replace / 替换标签", placeholder="Enter tags to replace in 'old_tag:new_tag' format, separated by commas / 输入要替换的标签，格式为 '旧标签:新标签'，用逗号分隔", lines=3)
             new_tag_input = gr.Textbox(label="Add New Tag / 添加新标签", placeholder="Enter a new tag to add / 输入一个新标签以添加", lines=3)
-            insert_position_input = gr.Radio(label="New Tag Insert Position / 新标签插入位置", choices=["Start / 开始", "End / 结束", "Random / 随机"], value="End / 结束")
+            insert_position_input = gr.Radio(label="New Tag Insert Position / 新标签插入位置", choices=["Start / 开始", "End / 结束", "Random / 随机"], value="Start / 开始")
 
         with gr.Row():
             wordcloud_output = gr.Image(label="Word Cloud / 词云")
@@ -505,7 +500,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             process_tags,
             inputs=[
                 folder_path_input, top_n_input, tags_to_remove_input, 
-                tags_to_replace_input, new_tag_input, insert_position_input, 
+                tags_to_replace_input, new_tag_input, insert_position_input,
                 translate_tags_input,  # 新增翻译复选框
                 api_key_input, api_url_input
             ],
