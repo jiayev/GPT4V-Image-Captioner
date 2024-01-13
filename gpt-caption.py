@@ -386,11 +386,10 @@ def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, i
     wordcloud_path = generate_wordcloud(tag_counts)
     network_graph_path = generate_network_graph(folder_path, top)
 
-
     # 翻译Tag功能
-    if translate[:3] == 'GPT':
+    if translate[:3] == 'GPT-3.5 translation / GPT3.5翻译':
         translator = Translator.GPTTranslator(api_key, api_url)
-    elif translate[:4] == 'Free':
+    elif translate[:4] == 'Free translation / 免费翻译':
         translator = Translator.ChineseTranslator()
     else:
         translator = None 
@@ -479,7 +478,11 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         with gr.Row():
             folder_path_input = gr.Textbox(label="Folder Path / 文件夹路径", placeholder="Enter folder path / 在此输入文件夹路径")
             top_n_input = gr.Number(label="Top N Tags / Top N 标签", value=100)
-            translate_tags_input = gr.Radio(label="翻译标签",choices=["GPT / 使用GPT3.5翻译标签","Free / 使用免费翻译","不翻译"], value="不翻译")  # 新增翻译复选框，24.1.10更新翻译选择
+            translate_tags_input = gr.Radio(label="Translate Tags to Chinese / 翻译标签",
+                                choices=["GPT-3.5 translation / GPT3.5翻译",
+                                         "Free translation / 免费翻译",
+                                         "No translation / 不翻译"],
+                                value="No translation / 不翻译")
             process_tags_button = gr.Button("Process Tags / 处理标签", variant='primary')
             output_message = gr.Textbox(label="Output Message / 输出信息", interactive=False)
 

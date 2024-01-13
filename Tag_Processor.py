@@ -110,7 +110,7 @@ def modify_tags_in_folder(folder_path, tags_to_remove, tags_to_replace_dict, new
                 for old_tag, new_tag_replacement in tags_to_replace_dict.items():
                     tags = [new_tag_replacement if tag == old_tag else tag for tag in tags]
                 # 添加标签
-                if new_tag and new_tag.strip():  # 确保新标签不为空或者不只是空白字符
+                if new_tag and new_tag.strip(): 
                     if insert_position == 'Start / 开始':
                         tags.insert(0, new_tag.strip())
                     elif insert_position == 'End / 结束':
