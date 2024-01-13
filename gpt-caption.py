@@ -24,6 +24,8 @@ import socket
 
 import platform
 
+import Translator
+
 #扩展prompt {} 标记功能，从文件读取额外内容
 def addition_prompt_process(prompt, image_path):
     # 从image_path分离文件名和扩展名，并更改扩展名为.txt
@@ -360,42 +362,6 @@ def get_prompts_from_csv():
 
 saves_folder = "."
 
-def translate_tags(tags, api_key, api_url):
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}"
-    }
-
-    session = requests.Session()
-    retries = Retry(total=5, backoff_factor=0.1, status_forcelist=[429, 500, 502, 503, 504])
-    session.mount('https://', HTTPAdapter(max_retries=retries))
-
-    def send_translation_request(tag):
-        data = {
-            "model": "gpt-3.5-turbo",
-            "messages": [
-                {"role": "user", "content": f"你是一个英译中专家，请直接返回'{tag}'最有可能的两种中文翻译结果，结果以逗号间隔."}
-            ]
-        }
-        response = session.post(api_url, headers=headers, json=data)
-        response_data = response.json()
-        
-        if response.status_code == 200 and 'choices' in response_data and 'content' in response_data['choices'][0]['message']:
-            return response_data['choices'][0]['message']['content']
-        else:
-            return f"Error or no translation for tag: {tag}"
-
-    # 使用线程池执行并发翻译请求
-    translations = [None] * len(tags)  # 初始化翻译列表，保持与tags相同的长度
-    with ThreadPoolExecutor(max_workers=50) as executor:
-        future_to_index = {executor.submit(send_translation_request, tag): i for i, tag in enumerate(tags)}  # 创建一个映射未来对象到列表索引的字典
-        for future in as_completed(future_to_index):
-            index = future_to_index[future]  # 获取未来对象对应的原始标签索引
-            translations[index] = future.result()  # 使用索引来放置翻译结果，保持与原始标签的顺序
-
-    session.close()
-    return translations
-
 def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, insert_position, translate, api_key, api_url):
     # 解析删除标签列表
     tags_to_remove_list = tags_to_remove.split(',') if tags_to_remove else []
@@ -422,8 +388,16 @@ def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, i
         return (tag[:max_length] + '...') if len(tag) > max_length else tag
 
     if translate[:3] == 'GPT':
+        translator = translator.GPTTranslator(api_key, api_url)
+    elif translate[:4] == 'Free':
+        translator = translator.ChineseTranslator()
+    else:
+        translator = None 
+
+    if translator:
         tags_to_translate = [tag for tag, _ in tag_counts]
-        translations = translate_tags(tags_to_translate, api_key, api_url)
+        translations = translator.translate_tags(translator, tags_to_translate)
+        
         # 确保 translations 列表长度与 tag_counts 一致
         translations.extend(["" for _ in range(len(tag_counts) - len(translations))])
         tag_counts_with_translation = [(truncate_tag(tag_counts[i][0]), tag_counts[i][1], translations[i]) for i in range(len(tag_counts))]
@@ -511,7 +485,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         with gr.Row():
             folder_path_input = gr.Textbox(label="Folder Path / 文件夹路径", placeholder="Enter folder path / 在此输入文件夹路径")
             top_n_input = gr.Number(label="Top N Tags / Top N 标签", value=100)
-            translate_tags_input = gr.Radio(label="翻译标签",choices=["GPT / 使用GPT3.5翻译标签","不翻译"], value="不翻译")  # 新增翻译复选框，24.1.10更新翻译选择
+            translate_tags_input = gr.Radio(label="翻译标签",choices=["GPT / 使用GPT3.5翻译标签","Free / 使用免费翻译","不翻译"], value="不翻译")  # 新增翻译复选框，24.1.10更新翻译选择
             process_tags_button = gr.Button("Process Tags / 处理标签", variant='primary')
             output_message = gr.Textbox(label="Output Message / 输出信息", interactive=False)
 
