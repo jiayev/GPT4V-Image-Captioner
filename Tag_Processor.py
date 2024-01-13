@@ -104,23 +104,20 @@ def modify_tags_in_folder(folder_path, tags_to_remove, tags_to_replace_dict, new
                 with open(file_path, 'r', encoding='utf-8') as f:
                     content = f.read()
                     tags = [tag.strip() for tag in content.split(',')]
-
                 # 删除标签
                 tags = [tag for tag in tags if tag not in tags_to_remove]
-
                 # 替换标签
-                for old_tag, new_tag_pair in tags_to_replace_dict.items():
-                    tags = [new_tag_pair if tag == old_tag else tag for tag in tags]
-                
+                for old_tag, new_tag_replacement in tags_to_replace_dict.items():
+                    tags = [new_tag_replacement if tag == old_tag else tag for tag in tags]
                 # 添加标签
-                if new_tag:
-                    if insert_position == 'start':
-                        tags.insert(0, new_tag)
-                    elif insert_position == 'end':
-                        tags.append(new_tag)
-                    elif insert_position == 'random':
+                if new_tag and new_tag.strip():  # 确保新标签不为空或者不只是空白字符
+                    if insert_position == 'Start / 开始':
+                        tags.insert(0, new_tag.strip())
+                    elif insert_position == 'End / 结束':
+                        tags.append(new_tag.strip())
+                    elif insert_position == 'Random / 随机':
                         random_index = random.randrange(len(tags)+1)
-                        tags.insert(random_index, new_tag)
+                        tags.insert(random_index, new_tag.strip())
                 
                 # 保存修改后的文件
                 with open(file_path, 'w', encoding='utf-8') as f:
