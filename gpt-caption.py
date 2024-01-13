@@ -1,64 +1,24 @@
-import base64
 import csv
 import requests
-import json
 import os
 import gradio as gr
 from tqdm import tqdm
 import concurrent.futures
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import mimetypes
 import shutil
 import threading
 import subprocess
-import webbrowser
 import time
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
-from ImgProcessing import process_images_in_folder
-from Tag_Processor import count_tags_in_folder, generate_wordcloud, modify_tags_in_folder, generate_network_graph
-import textwrap  # Import the textwrap module to help with wrapping text
 from huggingface_hub import snapshot_download
 import socket
 import platform
-import Translator
 
-#扩展prompt {} 标记功能，从文件读取额外内容
-def addition_prompt_process(prompt, image_path):
-    # 从image_path分离文件名和扩展名，并更改扩展名为.txt
-    if '{' not in prompt and '}' not in prompt:
-        return prompt
-    file_root, _ = os.path.splitext(image_path)
-    new_file_name = os.path.basename(file_root) + ".txt"
-    # 从prompt中提取目录路径
-    directory_path = prompt[prompt.find('{') + 1: prompt.find('}')]
-    # 拼接新的文件路径
-    full_path = os.path.join(directory_path, new_file_name)
-    # 读取full_path指定的文件内容
-    try:
-        with open(full_path, 'r') as file:
-            file_content = file.read()
-    except Exception as e:
-        return f"Error reading file: {e}"
-
-    new_prompt = prompt.replace('{' + directory_path + '}', file_content)
-    return new_prompt
-
-def unique_elements(original, addition):
-    original_list = list(map(str.strip, original.split(',')))
-    addition_list = list(map(str.strip, addition.split(',')))
-
-    combined_list = []
-    seen = set()
-    for item in original_list + addition_list:
-        if item not in seen and item != '':
-            seen.add(item)
-            combined_list.append(item)
-
-    return ', '.join(combined_list)
+from lib import Translator
+from lib.ImgProcessing import process_images_in_folder
+from lib.Tag_Processor import count_tags_in_folder, generate_wordcloud, modify_tags_in_folder, generate_network_graph
+from lib.run import run_openai_api, unique_elements
+from lib.api_utils import save_api_details, get_api_details
 
 def modify_file_content(file_path, new_content, mode):
-
     if mode == "skip/跳过" and os.path.exists(file_path):
         print(f"Skip writing, as the file {file_path} already exists.")
         return
@@ -82,92 +42,15 @@ def modify_file_content(file_path, new_content, mode):
         else:
             raise ValueError("Invalid mode. Must be 'overwrite/覆盖', 'prepend/前置插入', or 'append/末尾追加'.")
 
+
 should_stop = threading.Event()
-
-def get_saved_api_details():
-    settings_file = 'api_settings.json'
-    if os.path.exists(settings_file):
-        with open(settings_file, 'r') as f:
-            settings = json.load(f)
-        return settings.get('api_key', ''), settings.get('api_url', '')
-    return '', ''
-
-def save_api_details(api_key, api_url):
-    settings = {
-        'api_key': api_key,
-        'api_url': api_url
-    }
-    # 不记录空的apikey
-    if api_key != "":
-        with open('api_settings.json', 'w', encoding='utf-8') as f:
-            json.dump(settings, f)
-
-def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=10):
-    prompt = addition_prompt_process(prompt, image_path)
-    # print("prompt{}:",prompt)
-    with open(image_path, "rb") as image_file:
-        image_base64 = base64.b64encode(image_file.read()).decode('utf-8')
-    
-    data = {
-        "model": "gpt-4-vision-preview",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt},
-                    {"type": "image_url", "image_url": {
-                        "url":f"data:image/jpeg;base64,{image_base64}",
-                        "detail": f"{quality}"
-                        }
-                    }
-                ]
-            }
-        ],
-        "max_tokens": 300
-    }
-    
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}"
-    }
-    
-   # 配置重试策略
-    retries = Retry(total=5,
-                    backoff_factor=1,
-                    status_forcelist=[429, 500, 502, 503, 504],
-                    allowed_methods=["HEAD", "GET", "OPTIONS", "POST"])  # 更新参数名
-
-    with requests.Session() as s:
-        s.mount('https://', HTTPAdapter(max_retries=retries))
-        
-        try:
-            response = s.post(api_url, headers=headers, json=data, timeout=timeout)
-            response.raise_for_status()  # 如果请求失败，将抛出 HTTPError
-        except requests.exceptions.HTTPError as errh:
-            return f"HTTP Error: {errh}"
-        except requests.exceptions.ConnectionError as errc:
-            return f"Error Connecting: {errc}"
-        except requests.exceptions.Timeout as errt:
-            return f"Timeout Error: {errt}"
-        except requests.exceptions.RequestException as err:
-            return f"OOps: Something Else: {err}"
-    
-    try:
-        response_data = response.json()
-        
-        if 'error' in response_data:
-            return f"API error: {response_data['error']['message']}"
-        
-        caption = response_data["choices"][0]["message"]["content"]
-        return caption
-    except Exception as e:
-        return f"Failed to parse the API response: {e}\n{response.text}"
 
 def process_single_image(api_key, prompt, api_url, image_path, quality, timeout):
     save_api_details(api_key, api_url)
     caption = run_openai_api(image_path, prompt, api_key, api_url, quality, timeout)
     print(caption)
     return caption
+
 
 def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode, quality, timeout):
     should_stop.clear()
@@ -189,7 +72,7 @@ def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode
 
         if file_handling_mode != "skip/跳过" or not os.path.exists(caption_path):
             caption = run_openai_api(image_path, prompt, api_key, api_url, quality, timeout)
-            
+
             if caption.startswith("Error:") or caption.startswith("API error:"):
                 return handle_error(image_path, caption_path, caption_filename, filename)
             else:
@@ -206,7 +89,7 @@ def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode
 
         error_image_path = os.path.join(error_image_dir, filename)
         error_caption_path = os.path.join(error_image_dir, caption_filename)
-        
+
         try:
             shutil.move(image_path, error_image_path)
             if os.path.exists(caption_path):
@@ -221,10 +104,10 @@ def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode
             future = executor.submit(process_image, filename, file_handling_mode)
             futures[future] = filename  # 将 future 和 filename 映射起来
         progress = tqdm(total=len(futures), desc="Processing images")
-        
+
         try:
             for future in concurrent.futures.as_completed(futures):
-                filename = futures[future]  
+                filename = futures[future]
                 if should_stop.is_set():
                     for f in futures:
                         f.cancel()
@@ -244,7 +127,9 @@ def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode
     print(f"Processing complete. Total images processed: {len(results)}")
     return results
 
-def process_batch_watermark_detection(api_key, prompt, api_url, image_dir, detect_file_handling_mode, quality, timeout,watermark_dir):
+
+def process_batch_watermark_detection(api_key, prompt, api_url, image_dir, detect_file_handling_mode, quality, timeout,
+                                      watermark_dir):
     should_stop.clear()
     save_api_details(api_key, api_url)
     results = []
@@ -256,6 +141,7 @@ def process_batch_watermark_detection(api_key, prompt, api_url, image_dir, detec
         for file in files:
             if file.lower().endswith(supported_image_formats):
                 image_files.append(os.path.join(root, file))
+
     def process_image(filename, detect_file_handling_mode, watermark_dir):
         image_path = os.path.join(image_dir, filename)
         caption = run_openai_api(image_path, prompt, api_key, api_url, quality, timeout)
@@ -263,14 +149,12 @@ def process_batch_watermark_detection(api_key, prompt, api_url, image_dir, detec
         if caption.startswith("Error:") or caption.startswith("API error:"):
             return "error"
 
-        #EOI是cog迷之误判？
+        # EOI是cog迷之误判？
         if 'Yes,' in caption and '\'EOI\'' not in caption:
             if detect_file_handling_mode == "copy/复制":
                 shutil.copy(filename, watermark_dir)
             if detect_file_handling_mode == "move/移动":
                 shutil.move(filename, watermark_dir)
-
-
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
         futures = {}
@@ -300,14 +184,17 @@ def process_batch_watermark_detection(api_key, prompt, api_url, image_dir, detec
 
     results = f"Total checked images: {len(results)}"
     return results
+
+
 # 运行批处理
-saved_api_key, saved_api_url = get_saved_api_details()
+saved_api_key, saved_api_url = get_api_details()
+
 
 def run_script(folder_path, keywords):
     keywords = keywords if keywords else "sorry,error"
     result = subprocess.run(
         [
-            'python', 'Failed_Tagging_File_Screening.py',
+            'python', './lib/Failed_Tagging_File_Screening.py',
             '--image_path', folder_path,
             '--keywords', keywords
         ],
@@ -315,12 +202,15 @@ def run_script(folder_path, keywords):
     )
     return result.stdout if result.stdout else "No Output", result.stderr if result.stderr else "No Error"
 
+
 def stop_batch_processing():
     should_stop.set()
     return "Attempting to stop batch processing. Please wait for the current image to finish."
 
+
 # Define the path to your CSV file here
 PROMPTS_CSV_PATH = "saved_prompts.csv"
+
 
 # Function to save prompt to CSV
 def save_prompt(prompt):
@@ -338,6 +228,7 @@ def save_prompt(prompt):
         file.seek(0, os.SEEK_END)
     return gr.Dropdown(label="Saved Prompts", choices=get_prompts_from_csv(), type="value", interactive=True)
 
+
 # Function to delete a prompt from CSV
 def delete_prompt(prompt):
     lines = []
@@ -349,6 +240,7 @@ def delete_prompt(prompt):
         writer.writerows(lines)
     return gr.Dropdown(label="Saved Prompts", choices=get_prompts_from_csv(), type="value", interactive=True)
 
+
 # Function to get prompts from CSV for dropdown
 def get_prompts_from_csv():
     if not os.path.exists(PROMPTS_CSV_PATH):
@@ -357,13 +249,16 @@ def get_prompts_from_csv():
         reader = csv.reader(file)
         return [row[0] for row in reader if row]  # Don't include empty rows
 
+
 saves_folder = "."
 
-def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, insert_position, translate, api_key, api_url):
+
+def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, insert_position, translate, api_key,
+                 api_url):
     # 解析删除标签
     tags_to_remove_list = tags_to_remove.split(',') if tags_to_remove else []
     tags_to_remove_list = [tag.strip() for tag in tags_to_remove_list]
-    
+
     # 解析替换标签
     tags_to_replace_dict = {}
     if tags_to_replace:
@@ -380,9 +275,11 @@ def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, i
     # 词云
     top = int(top_n)
     tag_counts = count_tags_in_folder(folder_path, top)
+
     # 截断过长的标签名称，只保留前max_length个字符，并在末尾添加省略号
     def truncate_tag(tag, max_length=30):
         return (tag[:max_length] + '...') if len(tag) > max_length else tag
+
     wordcloud_path = generate_wordcloud(tag_counts)
     network_graph_path = generate_network_graph(folder_path, top)
 
@@ -392,33 +289,34 @@ def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, i
     elif translate.startswith('Free translation / 免费翻译'):
         translator = Translator.ChineseTranslator()
     else:
-        translator = None 
+        translator = None
     if translator:
         tags_to_translate = [tag for tag, _ in tag_counts]
         translations = Translator.translate_tags(translator, tags_to_translate)
         # 确保 translations 列表长度与 tag_counts 一致
         translations.extend(["" for _ in range(len(tag_counts) - len(translations))])
-        tag_counts_with_translation = [(truncate_tag(tag_counts[i][0]), tag_counts[i][1], translations[i]) for i in range(len(tag_counts))]
+        tag_counts_with_translation = [(truncate_tag(tag_counts[i][0]), tag_counts[i][1], translations[i]) for i in
+                                       range(len(tag_counts))]
     else:
         tag_counts_with_translation = [(truncate_tag(tag), count, "") for tag, count in tag_counts]
 
-    
     return tag_counts_with_translation, wordcloud_path, network_graph_path, "Tags processed successfully."
 
 
 os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
 
-
 with gr.Blocks(title="GPT4V captioner") as demo:
     gr.Markdown("### Image Captioning with GPT-4-Vision API / 使用 GPT-4-Vision API 进行图像打标")
-    
+
     with gr.Row():
-        api_key_input = gr.Textbox(label="API Key", placeholder="Enter your GPT-4-Vision API Key here", type="password", value=saved_api_key)
-        api_url_input = gr.Textbox(label="API URL", value=saved_api_url or "https://api.openai.com/v1/chat/completions", placeholder="Enter the GPT-4-Vision API URL here") 
+        api_key_input = gr.Textbox(label="API Key", placeholder="Enter your GPT-4-Vision API Key here", type="password",
+                                   value=saved_api_key)
+        api_url_input = gr.Textbox(label="API URL", value=saved_api_url or "https://api.openai.com/v1/chat/completions",
+                                   placeholder="Enter the GPT-4-Vision API URL here")
         quality_choices = [
-            ("Auto / 自动" , "auto"),
-            ("High Detail - More Expensive / 高细节-更贵" , "high"),
-            ("Low Detail - Cheaper / 低细节-更便宜" , "low")
+            ("Auto / 自动", "auto"),
+            ("High Detail - More Expensive / 高细节-更贵", "high"),
+            ("Low Detail - Cheaper / 低细节-更便宜", "low")
         ]
         quality = gr.Dropdown(choices=quality_choices, label="Image Quality / 图片质量", value="auto")
         timeout_input = gr.Number(label="Timeout (seconds) / 超时时间（秒）", value=10, step=1)
@@ -428,12 +326,16 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                               placeholder="Enter a descriptive prompt",
                               lines=5)
 
-
-    with gr.Accordion("Prompt Saving / 提示词存档",open=False):
+    with gr.Accordion("Prompt Saving / 提示词存档", open=False):
         saved_prompts = get_prompts_from_csv()
-        saved_prompts_dropdown = gr.Dropdown(label="Saved Prompts / 提示词存档", choices=saved_prompts, type="value", interactive=True)
+        saved_prompts_dropdown = gr.Dropdown(label="Saved Prompts / 提示词存档", choices=saved_prompts, type="value",
+                                             interactive=True)
+
+
         def update_textbox(prompt):
-                return prompt
+            return prompt
+
+
         with gr.Row():
             save_prompt_button = gr.Button("Save Prompt / 保存提示词")
             delete_prompt_button = gr.Button("Delete Prompt / 删除提示词")
@@ -441,68 +343,80 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         save_prompt_button.click(save_prompt, inputs=prompt_input, outputs=saved_prompts_dropdown)
         load_prompt_button.click(update_textbox, inputs=saved_prompts_dropdown, outputs=prompt_input)
         delete_prompt_button.click(delete_prompt, inputs=saved_prompts_dropdown, outputs=saved_prompts_dropdown)
-    
+
     with gr.Tab("Single Image / 单图处理"):
         with gr.Row():
             image_input = gr.Image(type='filepath', label="Upload Image / 上传图片")
             single_image_output = gr.Textbox(label="Caption Output / 标签输出")
         with gr.Row():
             single_image_submit = gr.Button("Caption Single Image / 图片打标", variant='primary')
-        
+
     with gr.Tab("Batch Image / 多图批处理"):
         with gr.Row():
-            batch_dir_input = gr.Textbox(label="Batch Directory / 批量目录", placeholder="Enter the directory path containing images for batch processing")
+            batch_dir_input = gr.Textbox(label="Batch Directory / 批量目录",
+                                         placeholder="Enter the directory path containing images for batch processing")
         with gr.Row():
-            batch_process_submit = gr.Button("Batch Process Images / 批量处理图像", variant='primary')        
+            batch_process_submit = gr.Button("Batch Process Images / 批量处理图像", variant='primary')
         with gr.Row():
             batch_output = gr.Textbox(label="Batch Processing Output / 批量输出")
             file_handling_mode = gr.Radio(
-            choices=["overwrite/覆盖", "prepend/前置插入", "append/末尾追加", "skip/跳过"],  
-            value="overwrite/覆盖", 
-            label="If a caption file exists: / 如果已经存在打标文件: "
-        )
+                choices=["overwrite/覆盖", "prepend/前置插入", "append/末尾追加", "skip/跳过"],
+                value="overwrite/覆盖",
+                label="If a caption file exists: / 如果已经存在打标文件: "
+            )
         with gr.Row():
             stop_button = gr.Button("Stop Batch Processing / 停止批量处理")
             stop_button.click(stop_batch_processing, inputs=[], outputs=batch_output)
 
     with gr.Tab("Failed File Screening / 打标失败文件筛查"):
         folder_input = gr.Textbox(label="Folder Input / 文件夹输入", placeholder="Enter the directory path")
-        keywords_input = gr.Textbox(placeholder="Enter keywords, e.g., sorry,error / 请输入检索关键词，例如：sorry,error", label="Keywords (optional) / 检索关键词（可选）")
+        keywords_input = gr.Textbox(placeholder="Enter keywords, e.g., sorry,error / 请输入检索关键词，例如：sorry,error",
+                                    label="Keywords (optional) / 检索关键词（可选）")
         run_button = gr.Button("Run Script / 运行脚本", variant='primary')
         output_area = gr.Textbox(label="Script Output / 脚本输出")
-        
+
         run_button.click(fn=run_script, inputs=[folder_input, keywords_input], outputs=output_area)
 
     with gr.Tab("Tag Manage / 标签处理"):
-        
+
         with gr.Row():
-            folder_path_input = gr.Textbox(label="Folder Path / 文件夹路径", placeholder="Enter folder path / 在此输入文件夹路径")
+            folder_path_input = gr.Textbox(label="Folder Path / 文件夹路径",
+                                           placeholder="Enter folder path / 在此输入文件夹路径")
             top_n_input = gr.Number(label="Top N Tags / Top N 标签", value=100)
             translate_tags_input = gr.Radio(label="Translate Tags to Chinese / 翻译标签",
-                                choices=["GPT-3.5 translation / GPT3.5翻译",
-                                         "Free translation / 免费翻译",
-                                         "No translation / 不翻译"],
-                                value="No translation / 不翻译")
+                                            choices=["GPT-3.5 translation / GPT3.5翻译",
+                                                     "Free translation / 免费翻译",
+                                                     "No translation / 不翻译"],
+                                            value="No translation / 不翻译")
             process_tags_button = gr.Button("Process Tags / 处理标签", variant='primary')
             output_message = gr.Textbox(label="Output Message / 输出信息", interactive=False)
 
         with gr.Row():
-            tags_to_remove_input = gr.Textbox(label="Tags to Remove / 删除标签", placeholder="Enter tags to remove, separated by commas / 输入要删除的标签，用逗号分隔", lines=3)
-            tags_to_replace_input = gr.Textbox(label="Tags to Replace / 替换标签", placeholder="Enter tags to replace in 'old_tag:new_tag' format, separated by commas / 输入要替换的标签，格式为 '旧标签:新标签'，用逗号分隔", lines=3)
-            new_tag_input = gr.Textbox(label="Add New Tag / 添加新标签", placeholder="Enter a new tag to add / 输入一个新标签以添加", lines=3)
-            insert_position_input = gr.Radio(label="New Tag Insert Position / 新标签插入位置", choices=["Start / 开始", "End / 结束", "Random / 随机"], value="Start / 开始")
+            tags_to_remove_input = gr.Textbox(label="Tags to Remove / 删除标签",
+                                              placeholder="Enter tags to remove, separated by commas / 输入要删除的标签，用逗号分隔",
+                                              lines=3)
+            tags_to_replace_input = gr.Textbox(label="Tags to Replace / 替换标签",
+                                               placeholder="Enter tags to replace in 'old_tag:new_tag' format, separated by commas / 输入要替换的标签，格式为 '旧标签:新标签'，用逗号分隔",
+                                               lines=3)
+            new_tag_input = gr.Textbox(label="Add New Tag / 添加新标签",
+                                       placeholder="Enter a new tag to add / 输入一个新标签以添加", lines=3)
+            insert_position_input = gr.Radio(label="New Tag Insert Position / 新标签插入位置",
+                                             choices=["Start / 开始", "End / 结束", "Random / 随机"],
+                                             value="Start / 开始")
 
         with gr.Row():
             wordcloud_output = gr.Image(label="Word Cloud / 词云")
-            tag_counts_output = gr.Dataframe(label="Top Tags / 高频标签", headers=["Tag Name", "Frequency", "Chinese Translation"], interactive=True)  # 修改 Dataframe 组件以显示三列
-            
+            tag_counts_output = gr.Dataframe(label="Top Tags / 高频标签",
+                                             headers=["Tag Name", "Frequency", "Chinese Translation"],
+                                             interactive=True)  # 修改 Dataframe 组件以显示三列
+
         with gr.Row():
             network_graph_output = gr.Image(label="Network Graph / 网络图")
 
         process_tags_button.click(
             process_tags,
             inputs=[
-                folder_path_input, top_n_input, tags_to_remove_input, 
+                folder_path_input, top_n_input, tags_to_remove_input,
                 tags_to_replace_input, new_tag_input, insert_position_input,
                 translate_tags_input,  # 新增翻译复选框
                 api_key_input, api_url_input
@@ -513,11 +427,11 @@ with gr.Blocks(title="GPT4V captioner") as demo:
     with gr.Tab("Image Zip / 图像预压缩"):
         with gr.Row():
             folder_path_input = gr.Textbox(
-                label="Image Folder Path / 图像文件夹路径", 
+                label="Image Folder Path / 图像文件夹路径",
                 placeholder="Enter the folder path containing images / 输入包含图像的文件夹路径"
             )
             process_images_button = gr.Button("Process Images / 压缩图像")
-            
+
         with gr.Row():
             # Add a Markdown component to display the warning message
             gr.Markdown("""
@@ -528,13 +442,13 @@ with gr.Blocks(title="GPT4V captioner") as demo:
 
         with gr.Row():
             image_processing_output = gr.Textbox(
-                label="Image Processing Output / 图像处理输出", 
+                label="Image Processing Output / 图像处理输出",
                 lines=3
             )
-            
+
         process_images_button.click(
-            fn=process_images_in_folder, 
-            inputs=[folder_path_input], 
+            fn=process_images_in_folder,
+            inputs=[folder_path_input],
             outputs=[image_processing_output]
         )
 
@@ -545,20 +459,22 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                 """)
         with gr.Row():
             detect_batch_dir_input = gr.Textbox(label="Image Directory / 图片目录",
-                                             placeholder="Enter the directory path containing images for batch processing")
+                                                placeholder="Enter the directory path containing images for batch processing")
         with gr.Row():
-            watermark_dir = gr.Textbox(label="Watermark Detected Image Directory / 检测到水印的图片目录", placeholder="Enter the directory path to move/copy detected images")
-            detect_file_handling_mode = gr.Radio(choices=["move/移动", "copy/复制"], value="move/移动", label="If watermark is detected / 如果图片检测到水印 ")
+            watermark_dir = gr.Textbox(label="Watermark Detected Image Directory / 检测到水印的图片目录",
+                                       placeholder="Enter the directory path to move/copy detected images")
+            detect_file_handling_mode = gr.Radio(choices=["move/移动", "copy/复制"], value="move/移动",
+                                                 label="If watermark is detected / 如果图片检测到水印 ")
         with gr.Row():
             batch_detect_submit = gr.Button("Batch Detect Images / 批量检测图像", variant='primary')
         with gr.Row():
             detect_batch_output = gr.Textbox(label="Output / 结果")
         with gr.Row():
-                detect_stop_button = gr.Button("Stop Batch Processing / 停止批量处理")
-                detect_stop_button.click(stop_batch_processing, inputs=[], outputs=detect_batch_output)
+            detect_stop_button = gr.Button("Stop Batch Processing / 停止批量处理")
+            detect_stop_button.click(stop_batch_processing, inputs=[], outputs=detect_batch_output)
     # CogVLM一键
     with gr.Tab("CogVLM Config / CogVLM配置"):
-        with gr.Row():    
+        with gr.Row():
             gr.Markdown("""
         ⚠ **Warning / 警告**: This is the CogVLM configuration page. To use CogVLM, you need to download it, which is approximately 35g+ in size and takes a long time (really, really long).
                         In addition, in terms of model selection, the vqa model performs better but slower, while the chat model is faster but slightly weaker.
@@ -567,20 +483,23 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         此为CogVLM配置页面，使用CogVLM需要配置相关环境并下载模型，大小约为35g+，需要较长时间（真的很长）。模型选择上，vqa模型效果更好但是更慢，chat模型更快但是效果略弱。
         使用CogVLM请确认自己的显卡有足够的显存（约12g±）
             """)
-            
-        with gr.Row(): 
+
+        with gr.Row():
             models_select = gr.Radio(label="Choose Models / 选择模型", choices=["vqa", "chat"], value="vqa")
-            acceleration_select = gr.Radio(label="Choose Default Plz / 选择是否国内加速", choices=["CN", "default"], value="CN")
+            acceleration_select = gr.Radio(label="Choose Default Plz / 选择是否国内加速", choices=["CN", "default"],
+                                           value="CN")
             download_button = gr.Button("Download Models / 下载模型", variant='primary')
             install_button = gr.Button("Install / 安装", variant='primary')
-        
+
         with gr.Row():
             switch_select = gr.Radio(label="Choose API / 选择API", choices=["GPT", "Cog"], value="GPT")
-            models_switch = gr.Radio(label="Choose Use Cog Models / 选择使用的Cog模型", choices=["vqa", "chat"], value="vqa")
+            models_switch = gr.Radio(label="Choose Use Cog Models / 选择使用的Cog模型", choices=["vqa", "chat"],
+                                     value="vqa")
             A_state = gr.Textbox(label="API State / API状态", interactive=False, value="GPT")
             switch_button = gr.Button("Switch / 切换", variant='primary')
 
-        def download_snapshot(model_type,acceleration):
+
+        def download_snapshot(model_type, acceleration):
             if acceleration == 'CN':
                 os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
             if model_type == 'vqa':
@@ -595,13 +514,14 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                     local_dir="./models/cogagent-chat-hf",
                     max_workers=8
                 )
-                
+
+
         def install_cog(acceleration):
             if acceleration == 'CN':
                 script_path = './install_script/installcog-cn'
             else:
                 script_path = './install_script/installcog'
-            
+
             if platform.system() == "Windows":
                 install_command = f'powershell -ExecutionPolicy Bypass -File "{script_path}.ps1"'
             else:
@@ -610,8 +530,9 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                 subprocess.run(install_command, check=True, shell=True)
             except subprocess.CalledProcessError as e:
                 print(f'Error: {e}')
-                
-        def switch_API(api,cogmod,state):
+
+
+        def switch_API(api, cogmod, state):
             if api == 'GPT':
                 key = saved_api_key
                 url = saved_api_url
@@ -619,7 +540,6 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                 s_state = "GPT"
 
             elif api == 'Cog':
-
 
                 def is_connection():
                     try:
@@ -629,12 +549,13 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                     except (socket.timeout, ConnectionRefusedError):
                         return False
 
-
                 if is_connection():
-                    if state[-3:] != cogmod :
+                    if state[-3:] != cogmod:
                         requests.post(f"http://127.0.0.1:8000/v1/{cogmod}")
                 else:
-                    subprocess.Popen(['powershell.exe', '-ExecutionPolicy', 'Bypass', '-File', 'runAPI.ps1', '-mod', cogmod],shell=True)
+                    subprocess.Popen(
+                        ['powershell.exe', '-ExecutionPolicy', 'Bypass', '-File', 'runAPI.ps1', '-mod', cogmod],
+                        shell=True)
                     while True:
                         if is_connection():
                             break
@@ -648,38 +569,49 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                 s_state = f"Cog-{cogmod}"
 
             return key, url, time_out, s_state
-        
-        download_button.click(download_snapshot, inputs=[models_select, acceleration_select],outputs=download_button)
-        install_button.click(install_cog, inputs=[acceleration_select],outputs=install_button)
-        switch_button.click(switch_API, inputs=[switch_select,models_switch,A_state],outputs=[api_key_input,api_url_input,timeout_input,A_state])
+
+
+        download_button.click(download_snapshot, inputs=[models_select, acceleration_select], outputs=download_button)
+        install_button.click(install_cog, inputs=[acceleration_select], outputs=install_button)
+        switch_button.click(switch_API, inputs=[switch_select, models_switch, A_state],
+                            outputs=[api_key_input, api_url_input, timeout_input, A_state])
+
 
     def batch_process(api_key, api_url, prompt, batch_dir, file_handling_mode, quality, timeout):
         process_batch_images(api_key, prompt, api_url, batch_dir, file_handling_mode, quality, timeout)
         return "Batch processing complete. Captions saved or updated as '.txt' files next to images."
 
+
     def batch_detect(api_key, api_url, prompt, batch_dir, detect_file_handling_mode, quality, timeout, watermark_dir):
-        results = process_batch_watermark_detection(api_key, prompt, api_url, batch_dir, detect_file_handling_mode, quality, timeout,
-                                          watermark_dir)
+        results = process_batch_watermark_detection(api_key, prompt, api_url, batch_dir, detect_file_handling_mode,
+                                                    quality, timeout,
+                                                    watermark_dir)
         return results
-    
+
+
     def caption_image(api_key, api_url, prompt, image, quality, timeout):
         if image:
             return process_single_image(api_key, prompt, api_url, image, quality, timeout)
-    
-    single_image_submit.click(caption_image, inputs=[api_key_input, api_url_input, prompt_input, image_input, quality, timeout_input], outputs=single_image_output)
+
+
+    single_image_submit.click(caption_image,
+                              inputs=[api_key_input, api_url_input, prompt_input, image_input, quality, timeout_input],
+                              outputs=single_image_output)
     batch_process_submit.click(
-        batch_process, 
-        inputs=[api_key_input, api_url_input, prompt_input, batch_dir_input, file_handling_mode, quality, timeout_input],
+        batch_process,
+        inputs=[api_key_input, api_url_input, prompt_input, batch_dir_input, file_handling_mode, quality,
+                timeout_input],
         outputs=batch_output
     )
     batch_detect_submit.click(
         batch_detect,
         inputs=[api_key_input, api_url_input, prompt_input, detect_batch_dir_input, detect_file_handling_mode, quality,
-                timeout_input,watermark_dir],
+                timeout_input, watermark_dir],
         outputs=detect_batch_output
     )
 
-    gr.Markdown("### Developers: [Jiaye](https://civitai.com/user/jiayev1),&nbsp;&nbsp;[LEOSAM 是只兔狲](https://civitai.com/user/LEOSAM),&nbsp;&nbsp;[SleeeepyZhou](https://space.bilibili.com/360375877),&nbsp;&nbsp;[Fok](https://civitai.com/user/fok3827)&nbsp;&nbsp;|&nbsp;&nbsp;Welcome everyone to add more new features to this project.")
+    gr.Markdown(
+        "### Developers: [Jiaye](https://civitai.com/user/jiayev1),&nbsp;&nbsp;[LEOSAM 是只兔狲](https://civitai.com/user/LEOSAM),&nbsp;&nbsp;[SleeeepyZhou](https://space.bilibili.com/360375877),&nbsp;&nbsp;[Fok](https://civitai.com/user/fok3827)&nbsp;&nbsp;|&nbsp;&nbsp;Welcome everyone to add more new features to this project.")
 
 if __name__ == "__main__":
     demo.launch(server_port=8848)
