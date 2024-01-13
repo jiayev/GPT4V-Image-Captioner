@@ -81,7 +81,9 @@ def count_tags_in_folder(folder_path, top_n):
                     tags = content.split(',')
                     tags = [tag.strip() for tag in tags]
                     tags_counter.update(tags)
-    return tags_counter.most_common(top_n)
+
+    sorted_tags = sorted(tags_counter.items(), key=lambda x: x[1], reverse=True)
+    return sorted_tags[:top_n]
 
 def generate_wordcloud(tag_counts):
     wordcloud = WordCloud(width=1600, height=1200, background_color='white')
