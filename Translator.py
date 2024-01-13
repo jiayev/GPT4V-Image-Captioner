@@ -52,7 +52,7 @@ class GPTTranslator:
         data = {
             "model": "gpt-3.5-turbo",
             "messages": [
-                {"role": "user", "content": f"你是一个英译中专家，请直接返回'{text}'最有可能的两种中文翻译结果，结果以逗号间隔."}
+                {"role": "user", "content": f"浣犳槸涓�涓嫳璇戜腑涓撳锛岃鐩存帴杩斿洖'{text}'鏈�鏈夊彲鑳界殑涓ょ涓枃缈昏瘧缁撴灉锛岀粨鏋滀互閫楀彿闂撮殧."}
             ]
         }
         response = self.session.post(self.api_url, headers=self.headers, json=data)
