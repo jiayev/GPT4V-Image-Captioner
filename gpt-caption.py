@@ -413,9 +413,11 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                     if state[-3:] != cogmod:
                         requests.post(f"http://127.0.0.1:8000/v1/{cogmod}")
                 else:
-                    subprocess.Popen(
-                        ['powershell.exe', '-ExecutionPolicy', 'Bypass', '-File', 'runAPI.ps1', '-mod', cogmod],
-                        shell=True)
+                    if platform.system() == "Windows":
+                        API_command = f'powershell -ExecutionPolicy Bypass -File "./install_script/runAPI.ps1" -mod {cogmod}'
+                    else:
+                        API_command = f'chmod +x ./install_script/runAPI.sh {cogmod}'
+                    subprocess.Popen(API_command,shell=True)
                     while True:
                         if is_connection():
                             break
