@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the Python version
-PYTHON_VERSION=3.10.2
+PYTHON_VERSION=3.10.
 
 # Check if Python is installed and the version is as expected
 if ! command -v python3 --version &>/dev/null || ! python3 --version | grep -q "$PYTHON_VERSION"; then
