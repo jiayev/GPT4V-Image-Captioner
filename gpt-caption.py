@@ -1,56 +1,38 @@
-import csv
-import requests
-import os
 import gradio as gr
-from tqdm import tqdm
-import concurrent.futures
+import os
 import shutil
 import threading
+
+import concurrent.futures
+from tqdm import tqdm
+
 import subprocess
 import time
-from huggingface_hub import snapshot_download
+import requests
 import socket
 import platform
+from huggingface_hub import snapshot_download
 
-from lib import Translator
-from lib.ImgProcessing import process_images_in_folder
-from lib.Tag_Processor import count_tags_in_folder, generate_wordcloud, modify_tags_in_folder, generate_network_graph
-from lib.run import run_openai_api, unique_elements
-from lib.api_utils import save_api_details, get_api_details
-
-def modify_file_content(file_path, new_content, mode):
-    if mode == "skip/跳过" and os.path.exists(file_path):
-        print(f"Skip writing, as the file {file_path} already exists.")
-        return
-
-    if mode == "overwrite/覆盖" or not os.path.exists(file_path):
-        with open(file_path, 'w', encoding='utf-8') as file:
-            file.write(new_content)
-        return
-
-    with open(file_path, 'r+', encoding='utf-8') as file:
-        existing_content = file.read()
-        file.seek(0)
-        if mode == "prepend/前置插入":
-            combined_content = unique_elements(new_content, existing_content)
-            file.write(combined_content)
-            file.truncate()
-        elif mode == "append/末尾追加":
-            combined_content = unique_elements(existing_content, new_content)
-            file.write(combined_content)
-            file.truncate()
-        else:
-            raise ValueError("Invalid mode. Must be 'overwrite/覆盖', 'prepend/前置插入', or 'append/末尾追加'.")
+from lib.Img_Processing import process_images_in_folder, run_script
+from lib.Tag_Processor import modify_file_content, process_tags
+from lib.GPT_Prompt import get_prompts_from_csv, save_prompt, delete_prompt
+from lib.Api_Utils import run_openai_api, save_api_details, get_api_details
 
 
+os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
+saved_api_key, saved_api_url = get_api_details()
+
+# 图像打标
 should_stop = threading.Event()
+def stop_batch_processing():
+    should_stop.set()
+    return "Attempting to stop batch processing. Please wait for the current image to finish."
 
 def process_single_image(api_key, prompt, api_url, image_path, quality, timeout):
     save_api_details(api_key, api_url)
     caption = run_openai_api(image_path, prompt, api_key, api_url, quality, timeout)
     print(caption)
     return caption
-
 
 def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode, quality, timeout):
     should_stop.clear()
@@ -127,7 +109,6 @@ def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode
     print(f"Processing complete. Total images processed: {len(results)}")
     return results
 
-
 def process_batch_watermark_detection(api_key, prompt, api_url, image_dir, detect_file_handling_mode, quality, timeout,
                                       watermark_dir):
     should_stop.clear()
@@ -185,126 +166,6 @@ def process_batch_watermark_detection(api_key, prompt, api_url, image_dir, detec
     results = f"Total checked images: {len(results)}"
     return results
 
-
-# 运行批处理
-saved_api_key, saved_api_url = get_api_details()
-
-
-def run_script(folder_path, keywords):
-    keywords = keywords if keywords else "sorry,error"
-    result = subprocess.run(
-        [
-            'python', './lib/Failed_Tagging_File_Screening.py',
-            '--image_path', folder_path,
-            '--keywords', keywords
-        ],
-        capture_output=True, text=True
-    )
-    return result.stdout if result.stdout else "No Output", result.stderr if result.stderr else "No Error"
-
-
-def stop_batch_processing():
-    should_stop.set()
-    return "Attempting to stop batch processing. Please wait for the current image to finish."
-
-
-# Define the path to your CSV file here
-PROMPTS_CSV_PATH = "saved_prompts.csv"
-
-
-# Function to save prompt to CSV
-def save_prompt(prompt):
-    print(f"Saving prompt: {prompt}")
-    # Append prompt to CSV file, making sure not to duplicate prompts.
-    with open(PROMPTS_CSV_PATH, 'a+', newline='', encoding='utf-8') as file:
-        # Move to the start of the file to read existing prompts
-        file.seek(0)
-        reader = csv.reader(file)
-        existing_prompts = [row[0] for row in reader]
-        if prompt not in existing_prompts:
-            writer = csv.writer(file)
-            writer.writerow([prompt])
-        # Move back to the end of the file for any further writes
-        file.seek(0, os.SEEK_END)
-    return gr.Dropdown(label="Saved Prompts", choices=get_prompts_from_csv(), type="value", interactive=True)
-
-
-# Function to delete a prompt from CSV
-def delete_prompt(prompt):
-    lines = []
-    with open(PROMPTS_CSV_PATH, 'r', newline='', encoding='utf-8') as readFile:
-        reader = csv.reader(readFile)
-        lines = [row for row in reader if row and row[0] != prompt]
-    with open(PROMPTS_CSV_PATH, 'w', newline='', encoding='utf-8') as writeFile:
-        writer = csv.writer(writeFile)
-        writer.writerows(lines)
-    return gr.Dropdown(label="Saved Prompts", choices=get_prompts_from_csv(), type="value", interactive=True)
-
-
-# Function to get prompts from CSV for dropdown
-def get_prompts_from_csv():
-    if not os.path.exists(PROMPTS_CSV_PATH):
-        return []  # If the CSV file does not exist, return an empty list
-    with open(PROMPTS_CSV_PATH, 'r', newline='', encoding='utf-8') as file:
-        reader = csv.reader(file)
-        return [row[0] for row in reader if row]  # Don't include empty rows
-
-
-saves_folder = "."
-
-
-def process_tags(folder_path, top_n, tags_to_remove, tags_to_replace, new_tag, insert_position, translate, api_key,
-                 api_url):
-    # 解析删除标签
-    tags_to_remove_list = tags_to_remove.split(',') if tags_to_remove else []
-    tags_to_remove_list = [tag.strip() for tag in tags_to_remove_list]
-
-    # 解析替换标签
-    tags_to_replace_dict = {}
-    if tags_to_replace:
-        try:
-            for pair in tags_to_replace.split(','):
-                old_tag, new_replacement_tag = pair.split(':')
-                tags_to_replace_dict[old_tag.strip()] = new_replacement_tag.strip()
-        except ValueError:
-            return "Error: Tags to replace must be in 'old_tag:new_tag' format separated by commas", None, None
-
-    # 修改文件夹中的标签
-    modify_tags_in_folder(folder_path, tags_to_remove_list, tags_to_replace_dict, new_tag, insert_position)
-
-    # 词云
-    top = int(top_n)
-    tag_counts = count_tags_in_folder(folder_path, top)
-
-    # 截断过长的标签名称，只保留前max_length个字符，并在末尾添加省略号
-    def truncate_tag(tag, max_length=30):
-        return (tag[:max_length] + '...') if len(tag) > max_length else tag
-
-    wordcloud_path = generate_wordcloud(tag_counts)
-    network_graph_path = generate_network_graph(folder_path, top)
-
-    # 翻译Tag功能
-    if translate.startswith('GPT-3.5 translation / GPT3.5翻译'):
-        translator = Translator.GPTTranslator(api_key, api_url)
-    elif translate.startswith('Free translation / 免费翻译'):
-        translator = Translator.ChineseTranslator()
-    else:
-        translator = None
-    if translator:
-        tags_to_translate = [tag for tag, _ in tag_counts]
-        translations = Translator.translate_tags(translator, tags_to_translate)
-        # 确保 translations 列表长度与 tag_counts 一致
-        translations.extend(["" for _ in range(len(tag_counts) - len(translations))])
-        tag_counts_with_translation = [(truncate_tag(tag_counts[i][0]), tag_counts[i][1], translations[i]) for i in
-                                       range(len(tag_counts))]
-    else:
-        tag_counts_with_translation = [(truncate_tag(tag), count, "") for tag, count in tag_counts]
-
-    return tag_counts_with_translation, wordcloud_path, network_graph_path, "Tags processed successfully."
-
-
-os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
-
 with gr.Blocks(title="GPT4V captioner") as demo:
     gr.Markdown("### Image Captioning with GPT-4-Vision API / 使用 GPT-4-Vision API 进行图像打标")
 
@@ -327,22 +188,18 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                               lines=5)
 
     with gr.Accordion("Prompt Saving / 提示词存档", open=False):
-        saved_prompts = get_prompts_from_csv()
-        saved_prompts_dropdown = gr.Dropdown(label="Saved Prompts / 提示词存档", choices=saved_prompts, type="value",
-                                             interactive=True)
-
-
         def update_textbox(prompt):
             return prompt
-
-
+        saved_pro = get_prompts_from_csv()
+        saved_prompts_dropdown = gr.Dropdown(label="Saved Prompts / 提示词存档", choices=saved_pro, type="value",interactive=True)
         with gr.Row():
             save_prompt_button = gr.Button("Save Prompt / 保存提示词")
             delete_prompt_button = gr.Button("Delete Prompt / 删除提示词")
             load_prompt_button = gr.Button("Load Prompt / 读取到输入框")
-        save_prompt_button.click(save_prompt, inputs=prompt_input, outputs=saved_prompts_dropdown)
+
+        save_prompt_button.click(save_prompt, inputs=prompt_input,outputs=[saved_prompts_dropdown])
+        delete_prompt_button.click(delete_prompt, inputs=saved_prompts_dropdown, outputs=[saved_prompts_dropdown])
         load_prompt_button.click(update_textbox, inputs=saved_prompts_dropdown, outputs=prompt_input)
-        delete_prompt_button.click(delete_prompt, inputs=saved_prompts_dropdown, outputs=saved_prompts_dropdown)
 
     with gr.Tab("Single Image / 单图处理"):
         with gr.Row():
@@ -472,6 +329,9 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         with gr.Row():
             detect_stop_button = gr.Button("Stop Batch Processing / 停止批量处理")
             detect_stop_button.click(stop_batch_processing, inputs=[], outputs=detect_batch_output)
+
+
+
     # CogVLM一键
     with gr.Tab("CogVLM Config / CogVLM配置"):
         with gr.Row():
@@ -611,7 +471,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
     )
 
     gr.Markdown(
-        "### Developers: [Jiaye](https://civitai.com/user/jiayev1),&nbsp;&nbsp;[LEOSAM 是只兔狲](https://civitai.com/user/LEOSAM),&nbsp;&nbsp;[SleeeepyZhou](https://space.bilibili.com/360375877),&nbsp;&nbsp;[Fok](https://civitai.com/user/fok3827)&nbsp;&nbsp;|&nbsp;&nbsp;Welcome everyone to add more new features to this project.")
+        "### Developers: [Jiaye](https://civitai.com/user/jiayev1),&nbsp;&nbsp;[LEOSAM 是只兔狲](https://civitai.com/user/LEOSAM),&nbsp;&nbsp;[SleeeepyZhou](https://civitai.com/user/SleeeepyZhou),&nbsp;&nbsp;[Fok](https://civitai.com/user/fok3827)&nbsp;&nbsp;|&nbsp;&nbsp;Welcome everyone to add more new features to this project.")
 
 if __name__ == "__main__":
     demo.launch(server_port=8848)
