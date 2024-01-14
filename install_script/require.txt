@@ -10,6 +10,7 @@ accelerate>=0.25.0
 pydantic>=2.5.2
 xformers>=0.0.23
 
+requests
 openai>=1.4.0
 sse-starlette>=1.8.2
 fastapi>=0.105.0
