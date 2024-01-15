@@ -24,10 +24,10 @@ echo Python installed.
 ping %target_url% -n 1 -w %timeout% >nul
 if %errorlevel% equ 0 (
     echo Use CN
-    PowerShell.exe -ExecutionPolicy Bypass -File "./install_script/install_cn.ps1"
+    PowerShell.exe -File "./install_script/install_cn.ps1"
 ) else (
     echo Use default
-    PowerShell.exe -ExecutionPolicy Bypass -File "./install_script/install.ps1"
+    PowerShell.exe -File "./install_script/install.ps1"
 )
 
 pause
