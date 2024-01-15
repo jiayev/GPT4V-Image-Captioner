@@ -383,7 +383,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                 script_path = './install_script/installcog'
 
             if platform.system() == "Windows":
-                install_command = f'powershell -ExecutionPolicy Bypass -File "{script_path}.ps1"'
+                install_command = f'powershell -File "{script_path}.ps1"'
             else:
                 install_command = f'bash "{script_path}.sh"'
             try:
@@ -413,10 +413,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                     if state[-3:] != cogmod:
                         requests.post(f"http://127.0.0.1:8000/v1/{cogmod}")
                 else:
-                    if platform.system() == "Windows":
-                        API_command = f'powershell -ExecutionPolicy Bypass -File "./install_script/runAPI.ps1" -mod {cogmod}'
-                    else:
-                        API_command = f'chmod +x ./install_script/runAPI.sh {cogmod}'
+                    API_command = f'python cog_openai_api.py --model {cogmod}'
                     subprocess.Popen(API_command,shell=True)
                     while True:
                         if is_connection():
