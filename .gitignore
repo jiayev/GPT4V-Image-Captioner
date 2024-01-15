@@ -4,8 +4,6 @@ __pycache__/
 
 # 忽略特定的配置文件和图片
 api_settings.json
-tag_network.png
-tag_wordcloud.png
 saved_prompts.csv
 
 # 忽略系统特定的文件
