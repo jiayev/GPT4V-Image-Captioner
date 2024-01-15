@@ -1,6 +1,7 @@
 # 忽略环境文件夹
 myenv/
 __pycache__/
+models/
 
 # 忽略特定的配置文件和图片
 api_settings.json
