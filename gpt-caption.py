@@ -450,5 +450,5 @@ with gr.Blocks(title="GPT4V captioner") as demo:
 
 if __name__ == "__main__":
     if mod_default != 'GPT':
-        switch_API('Cog',mod_default[-3:],'GPT')
+        threading.Thread(target=lambda: switch_API('Cog', mod_default[-3:], 'GPT')).start()
     demo.launch(server_port=8848)
