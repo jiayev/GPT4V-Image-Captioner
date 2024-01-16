@@ -14,12 +14,12 @@ import socket
 from lib.Img_Processing import process_images_in_folder, run_script
 from lib.Tag_Processor import modify_file_content, process_tags
 from lib.GPT_Prompt import get_prompts_from_csv, save_prompt, delete_prompt
-from lib.Api_Utils import run_openai_api, save_api_details, get_api_details, downloader, installer
+from lib.Api_Utils import run_openai_api, save_api_details, get_api_details, downloader, installer, save_state
 from lib.Detecter import detecter
 
 
 os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
-saved_api_key, saved_api_url = get_api_details()
+mod_default, saved_api_key, saved_api_url = get_api_details()
 
 # 图像打标
 should_stop = threading.Event()
@@ -385,8 +385,8 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             """)
 
         with gr.Row():
-            detecter_output = gr.Textbox(label="Installed? / 安装检测", interactive=False)
-            detect_button = gr.Button("Check / 检查")
+            detecter_output = gr.Textbox(label="Check Env / 环境检测", interactive=False)
+            detect_button = gr.Button("Check / 检查", variant='primary')
             
         with gr.Row():
             models_select = gr.Radio(label="Choose Models / 选择模型", choices=["vqa", "chat"], value="vqa")
@@ -399,14 +399,17 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             switch_select = gr.Radio(label="Choose API / 选择API", choices=["GPT", "Cog"], value="GPT")
             models_switch = gr.Radio(label="Choose Use Cog Models / 选择使用的Cog模型", choices=["vqa", "chat"],
                                      value="vqa")
-            A_state = gr.Textbox(label="API State / API状态", interactive=False, value="GPT")
+            A_state = gr.Textbox(label="API State / API状态", interactive=False, value=mod_default)
             switch_button = gr.Button("Switch / 切换", variant='primary')
+            set_default = gr.Button("Set as default / 设为默认", variant='primary')
+
 
         detect_button.click(detecter, outputs=detecter_output)
-        download_button.click(downloader, inputs=[models_select, acceleration_select], outputs=download_button)
-        install_button.click(installer, inputs=[acceleration_select], outputs=install_button)
+        download_button.click(downloader, inputs=[models_select, acceleration_select], outputs=detecter_output)
+        install_button.click(installer, inputs=[acceleration_select], outputs=detecter_output)
         switch_button.click(switch_API, inputs=[switch_select, models_switch, A_state],
                             outputs=[api_key_input, api_url_input, timeout_input, A_state])
+        set_default.click(save_state, inputs=models_switch, outputs=A_state)
 
 
     def batch_process(api_key, api_url, prompt, batch_dir, file_handling_mode, quality, timeout):
@@ -446,4 +449,6 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         "### Developers: [Jiaye](https://civitai.com/user/jiayev1),&nbsp;&nbsp;[LEOSAM 是只兔狲](https://civitai.com/user/LEOSAM),&nbsp;&nbsp;[SleeeepyZhou](https://civitai.com/user/SleeeepyZhou),&nbsp;&nbsp;[Fok](https://civitai.com/user/fok3827)&nbsp;&nbsp;|&nbsp;&nbsp;Welcome everyone to add more new features to this project.")
 
 if __name__ == "__main__":
+    if mod_default != 'GPT':
+        switch_API('Cog',mod_default[-3:],'GPT')
     demo.launch(server_port=8848)

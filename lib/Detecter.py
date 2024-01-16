@@ -6,7 +6,7 @@ def check_memory():
     for gpu in gpus:
         if gpu.memoryTotal > 12000:
             return ""
-    return "Insufficient GPU graphics memory for use. / 显存不足"
+    return "Insufficient GPU graphics memory for use. / 显存过小"
 
 def install_detection():
     # 读
