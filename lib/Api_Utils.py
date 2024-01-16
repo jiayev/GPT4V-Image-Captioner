@@ -4,6 +4,7 @@ import base64
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from huggingface_hub import snapshot_download
 
 API_PATH = 'api_settings.json'
 
@@ -92,7 +93,7 @@ def addition_prompt_process(prompt, image_path):
     return new_prompt
 
 
-# API 存档
+# API存档
 def save_api_details(api_key, api_url):
     settings = {
         'api_key': api_key,
@@ -111,3 +112,21 @@ def get_api_details():
             settings = json.load(f)
         return settings.get('api_key', ''), settings.get('api_url', '')
     return '', ''
+
+
+# Cog相关
+def downloader(model_type, acceleration):
+    if acceleration == 'CN':
+        os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+    if model_type == 'vqa':
+        snapshot_download(
+            repo_id="THUDM/cogagent-vqa-hf",
+            local_dir="./models/cogagent-vqa-hf",
+            max_workers=8
+        )
+    else:
+        snapshot_download(
+            repo_id="THUDM/cogagent-chat-hf",
+            local_dir="./models/cogagent-chat-hf",
+            max_workers=8
+        )
