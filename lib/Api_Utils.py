@@ -2,6 +2,8 @@ import os
 import json
 import base64
 import requests
+import subprocess
+import platform
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from huggingface_hub import snapshot_download
@@ -130,3 +132,18 @@ def downloader(model_type, acceleration):
             local_dir="./models/cogagent-chat-hf",
             max_workers=8
         )
+        
+def installer(acceleration):
+    if acceleration == 'CN':
+        script_path = './install_script/installcog-cn'
+    else:
+        script_path = './install_script/installcog'
+
+    if platform.system() == "Windows":
+        install_command = f'powershell -File "{script_path}.ps1"'
+    else:
+        install_command = f'bash "{script_path}.sh"'
+    try:
+        subprocess.run(install_command, check=True, shell=True)
+    except subprocess.CalledProcessError as e:
+        print(f'Error: {e}')
