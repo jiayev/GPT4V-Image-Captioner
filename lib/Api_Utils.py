@@ -98,6 +98,7 @@ def addition_prompt_process(prompt, image_path):
 # API存档
 def save_api_details(api_key, api_url):
     settings = {
+        'model' : 'GPT',
         'api_key': api_key,
         'api_url': api_url
     }
@@ -106,14 +107,24 @@ def save_api_details(api_key, api_url):
         with open(API_PATH, 'w', encoding='utf-8') as f:
             json.dump(settings, f)
 
+def save_state(mod):
+    settings = {
+        'model' : f'Cog-{mod}',
+        'api_key': "",
+        'api_url': "http://127.0.0.1:8000/v1/chat/completions"
+    }
+    with open(API_PATH, 'w', encoding='utf-8') as f:
+        json.dump(settings, f)
+    return f"Set {mod} as default. / {mod}已设为默认"
+
 def get_api_details():
     # 读取API设置
     settings_file = API_PATH
     if os.path.exists(settings_file):
         with open(settings_file, 'r') as f:
             settings = json.load(f)
-        return settings.get('api_key', ''), settings.get('api_url', '')
-    return '', ''
+        return settings.get('model', ''), settings.get('api_key', ''), settings.get('api_url', '')
+    return 'GPT', '', ''
 
 
 # Cog相关
@@ -132,6 +143,7 @@ def downloader(model_type, acceleration):
             local_dir="./models/cogagent-chat-hf",
             max_workers=8
         )
+    return f"{model_type} Model download completed. / {model_type}模型下载完成"
         
 def installer(acceleration):
     if acceleration == 'CN':
@@ -145,5 +157,6 @@ def installer(acceleration):
         install_command = f'bash "{script_path}.sh"'
     try:
         subprocess.run(install_command, check=True, shell=True)
+        return f"Env Completed. / 环境配置完成"
     except subprocess.CalledProcessError as e:
         print(f'Error: {e}')
