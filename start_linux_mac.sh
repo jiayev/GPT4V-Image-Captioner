@@ -1,11 +1,11 @@
 #!/bin/bash
+url="http://127.0.0.1:8848"
 
-# Activate the virtual environment
 source myenv/bin/activate
 
-# Run Python script
-python gpt-caption.py
+python gpt-caption.py &
+sleep 2
+xdg-open "$url"
 
-# Wait for a user input to pause the script
 read -p "Press any key to continue . . . " -n1 -s
 echo
