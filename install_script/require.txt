@@ -1,7 +1,6 @@
 SwissArmyTransformer>=0.4.9
 transformers>=4.36.1
 spacy>=3.6.0
-pillow>=10.0.1
 seaborn>=0.13.0
 loguru~=0.7.2
 streamlit>=1.29.0
