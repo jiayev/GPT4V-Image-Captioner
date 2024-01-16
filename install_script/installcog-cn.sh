@@ -21,8 +21,6 @@ check "激活虚拟环境失败。"
 
 pip install torch==2.1.2+cu121 torchvision==0.16.2+cu121 -f https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html -i https://mirror.baidu.com/pypi/simple
 Check "torch 安装失败"
-pip install -U -I --no-deps xformers==0.0.22
-Check "xformers 安装失败。"
 
 echo "安装 bitsandbytes..."
 pip install bitsandbytes==0.41.1 --index-url https://jihulab.com/api/v4/projects/140618/packages/pypi/simple

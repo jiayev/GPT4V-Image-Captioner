@@ -10,12 +10,12 @@ import subprocess
 import time
 import requests
 import socket
-import platform
 
 from lib.Img_Processing import process_images_in_folder, run_script
 from lib.Tag_Processor import modify_file_content, process_tags
 from lib.GPT_Prompt import get_prompts_from_csv, save_prompt, delete_prompt
-from lib.Api_Utils import run_openai_api, save_api_details, get_api_details, downloader
+from lib.Api_Utils import run_openai_api, save_api_details, get_api_details, downloader, installer
+from lib.Detecter import detecter
 
 
 os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
@@ -165,6 +165,43 @@ def process_batch_watermark_detection(api_key, prompt, api_url, image_dir, detec
     results = f"Total checked images: {len(results)}"
     return results
 
+# api
+def switch_API(api, cogmod, state):
+    if api == 'GPT':
+        key = saved_api_key
+        url = saved_api_url
+        time_out = 10
+        s_state = "GPT"
+
+    elif api == 'Cog':
+
+        def is_connection():
+            try:
+                socket.create_connection(("127.0.0.1", 8000), timeout=1)
+                print("API has started.")
+                return True
+            except (socket.timeout, ConnectionRefusedError):
+                return False
+
+        if is_connection():
+            if state[-3:] != cogmod:
+                requests.post(f"http://127.0.0.1:8000/v1/{cogmod}")
+        else:
+            API_command = f'python cog_openai_api.py --model {cogmod}'
+            subprocess.Popen(API_command,shell=True)
+            while True:
+                if is_connection():
+                    break
+                else:
+                    print("Retrying...")
+                    time.sleep(2)
+
+        key = ""
+        url = "http://127.0.0.1:8000/v1/chat/completions"
+        time_out = 300
+        s_state = f"Cog-{cogmod}"
+
+    return key, url, time_out, s_state
 
 # UI界面
 with gr.Blocks(title="GPT4V captioner") as demo:
@@ -348,7 +385,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             """)
 
         with gr.Row():
-            detecter_output = gr.Textbox(label="Installed? / 安装检测")
+            detecter_output = gr.Textbox(label="Installed? / 安装检测", interactive=False)
             detect_button = gr.Button("Check / 检查")
             
         with gr.Row():
@@ -365,63 +402,9 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             A_state = gr.Textbox(label="API State / API状态", interactive=False, value="GPT")
             switch_button = gr.Button("Switch / 切换", variant='primary')
 
-
-        def install_cog(acceleration):
-            if acceleration == 'CN':
-                script_path = './install_script/installcog-cn'
-            else:
-                script_path = './install_script/installcog'
-
-            if platform.system() == "Windows":
-                install_command = f'powershell -File "{script_path}.ps1"'
-            else:
-                install_command = f'bash "{script_path}.sh"'
-            try:
-                subprocess.run(install_command, check=True, shell=True)
-            except subprocess.CalledProcessError as e:
-                print(f'Error: {e}')
-
-
-        def switch_API(api, cogmod, state):
-            if api == 'GPT':
-                key = saved_api_key
-                url = saved_api_url
-                time_out = 10
-                s_state = "GPT"
-
-            elif api == 'Cog':
-
-                def is_connection():
-                    try:
-                        socket.create_connection(("127.0.0.1", 8000), timeout=1)
-                        print("API has started.")
-                        return True
-                    except (socket.timeout, ConnectionRefusedError):
-                        return False
-
-                if is_connection():
-                    if state[-3:] != cogmod:
-                        requests.post(f"http://127.0.0.1:8000/v1/{cogmod}")
-                else:
-                    API_command = f'python cog_openai_api.py --model {cogmod}'
-                    subprocess.Popen(API_command,shell=True)
-                    while True:
-                        if is_connection():
-                            break
-                        else:
-                            print("Retrying...")
-                            time.sleep(2)
-
-                key = ""
-                url = "http://127.0.0.1:8000/v1/chat/completions"
-                time_out = 300
-                s_state = f"Cog-{cogmod}"
-
-            return key, url, time_out, s_state
-
-
+        detect_button.click(detecter, outputs=detecter_output)
         download_button.click(downloader, inputs=[models_select, acceleration_select], outputs=download_button)
-        install_button.click(install_cog, inputs=[acceleration_select], outputs=install_button)
+        install_button.click(installer, inputs=[acceleration_select], outputs=install_button)
         switch_button.click(switch_API, inputs=[switch_select, models_switch, A_state],
                             outputs=[api_key_input, api_url_input, timeout_input, A_state])
 
