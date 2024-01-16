@@ -11,12 +11,11 @@ import time
 import requests
 import socket
 import platform
-from huggingface_hub import snapshot_download
 
 from lib.Img_Processing import process_images_in_folder, run_script
 from lib.Tag_Processor import modify_file_content, process_tags
 from lib.GPT_Prompt import get_prompts_from_csv, save_prompt, delete_prompt
-from lib.Api_Utils import run_openai_api, save_api_details, get_api_details
+from lib.Api_Utils import run_openai_api, save_api_details, get_api_details, downloader
 
 
 os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
@@ -166,6 +165,8 @@ def process_batch_watermark_detection(api_key, prompt, api_url, image_dir, detec
     results = f"Total checked images: {len(results)}"
     return results
 
+
+# UI界面
 with gr.Blocks(title="GPT4V captioner") as demo:
     gr.Markdown("### Image Captioning with GPT-4-Vision API / 使用 GPT-4-Vision API 进行图像打标")
 
@@ -333,17 +334,23 @@ with gr.Blocks(title="GPT4V captioner") as demo:
 
 
     # CogVLM一键
-    with gr.Tab("CogVLM Config / CogVLM配置"):
+    with gr.Tab("API Config / API配置"):
         with gr.Row():
             gr.Markdown("""
-        ⚠ **Warning / 警告**: This is the CogVLM configuration page. To use CogVLM, you need to download it, which is approximately 35g+ in size and takes a long time (really, really long).
+        ⚠ **Warning / 警告**: 
+        This is the API configuration page. To use CogVLM, you need to configure environment and download it, which is **approximately 35g+** in size and takes a long time ***(really, really long)***. 
+                        After installation and download, the total space occupied is about ***40g+***. Please confirm that the disk space is sufficient.
                         In addition, in terms of model selection, the vqa model performs better but slower, while the chat model is faster but slightly weaker.
-                        Please confirm that your GPU has sufficient graphics memory (approximately 12g ±) when using CogVLM
-
-        此为CogVLM配置页面，使用CogVLM需要配置相关环境并下载模型，大小约为35g+，需要较长时间（真的很长）。模型选择上，vqa模型效果更好但是更慢，chat模型更快但是效果略弱。
-        使用CogVLM请确认自己的显卡有足够的显存（约12g±）
+                        Please confirm that your GPU has sufficient graphics memory ***(approximately 14g ±)*** when using CogVLM
+                        
+        此为API配置页面，使用CogVLM需要配置相关环境并下载模型，**大小约为35g+**，需要较长时间 ***(真的很长)***。安装以及下载完成后，总占用空间约为40g+，请确认磁盘空间充足。
+                        模型选择上，vqa模型效果更好但是更慢，chat模型更快但是效果略弱。使用CogVLM请确认自己的显卡有足够的显存 ***(约14g±)***
             """)
 
+        with gr.Row():
+            detecter_output = gr.Textbox(label="Installed? / 安装检测")
+            detect_button = gr.Button("Check / 检查")
+            
         with gr.Row():
             models_select = gr.Radio(label="Choose Models / 选择模型", choices=["vqa", "chat"], value="vqa")
             acceleration_select = gr.Radio(label="Choose Default Plz / 选择是否国内加速", choices=["CN", "default"],
@@ -357,23 +364,6 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                                      value="vqa")
             A_state = gr.Textbox(label="API State / API状态", interactive=False, value="GPT")
             switch_button = gr.Button("Switch / 切换", variant='primary')
-
-
-        def download_snapshot(model_type, acceleration):
-            if acceleration == 'CN':
-                os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
-            if model_type == 'vqa':
-                snapshot_download(
-                    repo_id="THUDM/cogagent-vqa-hf",
-                    local_dir="./models/cogagent-vqa-hf",
-                    max_workers=8
-                )
-            else:
-                snapshot_download(
-                    repo_id="THUDM/cogagent-chat-hf",
-                    local_dir="./models/cogagent-chat-hf",
-                    max_workers=8
-                )
 
 
         def install_cog(acceleration):
@@ -430,7 +420,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             return key, url, time_out, s_state
 
 
-        download_button.click(download_snapshot, inputs=[models_select, acceleration_select], outputs=download_button)
+        download_button.click(downloader, inputs=[models_select, acceleration_select], outputs=download_button)
         install_button.click(install_cog, inputs=[acceleration_select], outputs=install_button)
         switch_button.click(switch_API, inputs=[switch_select, models_switch, A_state],
                             outputs=[api_key_input, api_url_input, timeout_input, A_state])
