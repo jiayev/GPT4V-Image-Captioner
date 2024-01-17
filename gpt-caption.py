@@ -409,7 +409,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             
         with gr.Row():
             models_select = gr.Radio(label="Choose Models / 选择模型", choices=["vqa", "chat"], value="vqa")
-            acceleration_select = gr.Radio(label="Choose Default Plz / 选择是否国内加速", choices=["CN", "default"],
+            acceleration_select = gr.Radio(label="Choose Default Plz / 选择是否国内加速(如果使用国内加速,请关闭魔法上网)", choices=["CN", "default"],
                                            value="CN")
             download_button = gr.Button("Download Models / 下载模型", variant='primary')
             install_button = gr.Button("Install / 安装", variant='primary')
