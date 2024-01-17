@@ -308,16 +308,11 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         with gr.Row():
             network_graph_output = gr.Image(label="Network Graph / 网络图")
 
-        process_tags_button.click(
-            process_tags,
-            inputs=[
-                folder_path_input, top_n_input, tags_to_remove_input,
-                tags_to_replace_input, new_tag_input, insert_position_input,
-                translate_tags_input,  # 新增翻译复选框
-                api_key_input, api_url_input
-            ],
-            outputs=[tag_counts_output, wordcloud_output, network_graph_output, output_message]
-        )
+        process_tags_button.click(process_tags,
+                                  inputs=[folder_path_input, top_n_input, tags_to_remove_input,
+                                        tags_to_replace_input, new_tag_input, insert_position_input,
+                                        translate_tags_input, api_key_input, api_url_input], # 新增翻译复选框
+                                  outputs=[tag_counts_output, wordcloud_output, network_graph_output, output_message])
 
     with gr.Tab("Image Zip / 图像预压缩"):
         with gr.Row():
@@ -341,11 +336,9 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                 lines=3
             )
 
-        process_images_button.click(
-            fn=process_images_in_folder,
+        process_images_button.click(process_images_in_folder,
             inputs=[folder_path_input],
-            outputs=[image_processing_output]
-        )
+            outputs=[image_processing_output])
 
     with gr.Tab("Watermark Detection / 批量水印检测"):
         gr.Markdown("""
@@ -368,7 +361,33 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             detect_stop_button = gr.Button("Stop Batch Processing / 停止批量处理")
             detect_stop_button.click(stop_batch_processing, inputs=[], outputs=detect_batch_output)
 
+    def batch_process(api_key, api_url, prompt, batch_dir, file_handling_mode, quality, timeout):
+        process_batch_images(api_key, prompt, api_url, batch_dir, file_handling_mode, quality, timeout)
+        return "Batch processing complete. Captions saved or updated as '.txt' files next to images."
 
+
+    def batch_detect(api_key, api_url, prompt, batch_dir, detect_file_handling_mode, quality, timeout, watermark_dir):
+        results = process_batch_watermark_detection(api_key, prompt, api_url, batch_dir, detect_file_handling_mode,
+                                                    quality, timeout,watermark_dir)
+        return results
+
+
+    def caption_image(api_key, api_url, prompt, image, quality, timeout):
+        if image:
+            return process_single_image(api_key, prompt, api_url, image, quality, timeout)
+
+
+    single_image_submit.click(caption_image,
+                              inputs=[api_key_input, api_url_input, prompt_input, image_input, quality, timeout_input],
+                              outputs=single_image_output)
+    batch_process_submit.click(batch_process,
+                               inputs=[api_key_input, api_url_input, prompt_input, batch_dir_input, 
+                                       file_handling_mode, quality, timeout_input],
+                               outputs=batch_output)
+    batch_detect_submit.click(batch_detect,
+                              inputs=[api_key_input, api_url_input, prompt_input, detect_batch_dir_input, 
+                                      detect_file_handling_mode, quality, timeout_input, watermark_dir],
+                              outputs=detect_batch_output)
 
     # CogVLM一键
     with gr.Tab("API Config / API配置"):
@@ -405,45 +424,12 @@ with gr.Blocks(title="GPT4V captioner") as demo:
 
 
         detect_button.click(detecter, outputs=detecter_output)
-        download_button.click(downloader, inputs=[models_select, acceleration_select], outputs=detecter_output)
+        download_button.click(downloader, inputs=[models_select, acceleration_select], 
+                              outputs=detecter_output)
         install_button.click(installer, inputs=[acceleration_select], outputs=detecter_output)
         switch_button.click(switch_API, inputs=[switch_select, models_switch, A_state],
                             outputs=[api_key_input, api_url_input, timeout_input, A_state])
         set_default.click(save_state, inputs=models_switch, outputs=A_state)
-
-
-    def batch_process(api_key, api_url, prompt, batch_dir, file_handling_mode, quality, timeout):
-        process_batch_images(api_key, prompt, api_url, batch_dir, file_handling_mode, quality, timeout)
-        return "Batch processing complete. Captions saved or updated as '.txt' files next to images."
-
-
-    def batch_detect(api_key, api_url, prompt, batch_dir, detect_file_handling_mode, quality, timeout, watermark_dir):
-        results = process_batch_watermark_detection(api_key, prompt, api_url, batch_dir, detect_file_handling_mode,
-                                                    quality, timeout,
-                                                    watermark_dir)
-        return results
-
-
-    def caption_image(api_key, api_url, prompt, image, quality, timeout):
-        if image:
-            return process_single_image(api_key, prompt, api_url, image, quality, timeout)
-
-
-    single_image_submit.click(caption_image,
-                              inputs=[api_key_input, api_url_input, prompt_input, image_input, quality, timeout_input],
-                              outputs=single_image_output)
-    batch_process_submit.click(
-        batch_process,
-        inputs=[api_key_input, api_url_input, prompt_input, batch_dir_input, file_handling_mode, quality,
-                timeout_input],
-        outputs=batch_output
-    )
-    batch_detect_submit.click(
-        batch_detect,
-        inputs=[api_key_input, api_url_input, prompt_input, detect_batch_dir_input, detect_file_handling_mode, quality,
-                timeout_input, watermark_dir],
-        outputs=detect_batch_output
-    )
 
     gr.Markdown(
         "### Developers: [Jiaye](https://civitai.com/user/jiayev1),&nbsp;&nbsp;[LEOSAM 是只兔狲](https://civitai.com/user/LEOSAM),&nbsp;&nbsp;[SleeeepyZhou](https://civitai.com/user/SleeeepyZhou),&nbsp;&nbsp;[Fok](https://civitai.com/user/fok3827)&nbsp;&nbsp;|&nbsp;&nbsp;Welcome everyone to add more new features to this project.")

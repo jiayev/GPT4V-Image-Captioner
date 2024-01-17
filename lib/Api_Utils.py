@@ -123,7 +123,16 @@ def get_api_details():
     if os.path.exists(settings_file):
         with open(settings_file, 'r') as f:
             settings = json.load(f)
-        return settings.get('model', ''), settings.get('api_key', ''), settings.get('api_url', '')
+        if settings.get('model', '') != '':
+            return settings.get('model', ''), settings.get('api_key', ''), settings.get('api_url', '')
+        else:
+            if settings.get('api_key', '') != '':
+                i_key = settings.get('api_key', '')
+                i_url = settings.get('api_url', '')
+                save_api_details(i_key,i_url)
+                with open(settings_file, 'r') as i:
+                    settings = json.load(i)
+                return settings.get('model', ''), settings.get('api_key', ''), settings.get('api_url', '')
     return 'GPT', '', ''
 
 
