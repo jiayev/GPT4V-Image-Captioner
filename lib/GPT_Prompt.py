@@ -25,7 +25,7 @@ def save_prompt(prompt):
             writer.writerow([prompt])
         # Move to end
         file.seek(0, os.SEEK_END)
-    return gr.Dropdown.update(choices=get_prompts_from_csv())
+    return gr.Dropdown(label="Saved Prompts", choices=get_prompts_from_csv(), type="value", interactive=True)
 
 def delete_prompt(prompt):
     lines = []
@@ -35,4 +35,4 @@ def delete_prompt(prompt):
     with open(PROMPTS_CSV_PATH, 'w', newline='', encoding='utf-8') as writeFile:
         writer = csv.writer(writeFile)
         writer.writerows(lines)
-    return gr.Dropdown.update(choices=get_prompts_from_csv())
+    return gr.Dropdown(label="Saved Prompts", choices=get_prompts_from_csv(), type="value", interactive=True)

@@ -11,3 +11,8 @@ saved_prompts.csv
 # 忽略系统特定的文件
 Thumbs.db
 .DS_Store
+.vs/
+*.pyproj
+*.user
+*.sln
+/saved_prompts.csv
