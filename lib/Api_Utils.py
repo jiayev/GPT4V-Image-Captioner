@@ -1,4 +1,5 @@
 import os
+import time
 import json
 import base64
 import requests
@@ -154,18 +155,17 @@ def downloader(model_type, acceleration):
         )
     return f"{model_type} Model download completed. / {model_type}模型下载完成"
         
-def installer(acceleration):
-    if acceleration == 'CN':
-        script_path = './install_script/installcog-cn'
-    else:
-        script_path = './install_script/installcog'
-
+def installer():
+    script_path = '.\install_script\installcog'
     if platform.system() == "Windows":
-        install_command = f'powershell -File "{script_path}.ps1"'
+        install_command = f'{script_path}.bat'
     else:
-        install_command = f'bash "{script_path}.sh"'
-    try:
-        subprocess.run(install_command, check=True, shell=True)
-        return f"Env Completed. / 环境配置完成"
-    except subprocess.CalledProcessError as e:
-        print(f'Error: {e}')
+        install_command = f'{script_path}.sh'
+    subprocess.Popen(install_command, shell=True)
+
+    while not os.path.exists('install_temp.txt'):
+        time.sleep(2)
+    with open('install_temp.txt', 'r') as file:
+        result_string = file.read()
+    os.remove('install_temp.txt')
+    return result_string

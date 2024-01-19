@@ -1,7 +1,5 @@
 @echo off
 
-set HF_HOME=huggingface
-
 REM 检测python安装
 SET PYTHON_VERSION=3.10.2
 SET PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/%PYTHON_VERSION%/python-%PYTHON_VERSION%-amd64.exe
@@ -40,8 +38,8 @@ call myenv\Scripts\activate
 REM 通过百度检测网络设置使用镜像
 set "target_url=www.baidu.com"
 set "timeout=3000"
-ping %target_url% -n 1 -w %timeout% >nul
 
+ping %target_url% -n 1 -w %timeout% >nul
 if %errorlevel% equ 0 (
     echo Use CN
     set PIP_DISABLE_PIP_VERSION_CHECK=1
@@ -51,14 +49,16 @@ if %errorlevel% equ 0 (
     echo Use default
 )
 
+set HF_HOME=huggingface
 
 REM 安装依赖
 
-echo Install lib
+echo Installing deps...
 echo 安装依赖
 python -m pip install --upgrade pip
 pip install -r ./install_script/requirements.txt
 if %ERRORLEVEL% neq 0 (
+    echo Deps install failed
     echo 依赖安装失败。
     pause >nul
     exit /b 1

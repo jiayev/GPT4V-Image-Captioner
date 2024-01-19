@@ -7,6 +7,7 @@ releases/
 # 忽略特定的配置文件和图片
 api_settings.json
 saved_prompts.csv
+install_temp.txt
 
 # 忽略系统特定的文件
 Thumbs.db
@@ -15,4 +16,3 @@ Thumbs.db
 *.pyproj
 *.user
 *.sln
-/saved_prompts.csv

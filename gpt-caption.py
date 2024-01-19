@@ -239,38 +239,125 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         delete_prompt_button.click(delete_prompt, inputs=saved_prompts_dropdown, outputs=[saved_prompts_dropdown])
         load_prompt_button.click(update_textbox, inputs=saved_prompts_dropdown, outputs=prompt_input)
 
-    with gr.Tab("Single Image / 单图处理"):
-        with gr.Row():
-            image_input = gr.Image(type='filepath', label="Upload Image / 上传图片")
-            single_image_output = gr.Textbox(label="Caption Output / 标签输出")
-        with gr.Row():
-            single_image_submit = gr.Button("Caption Single Image / 图片打标", variant='primary')
+    with gr.Tab("Image Process / 图片处理"):
+        
+        with gr.Tab("Image Zip / 图像预压缩"):
+            with gr.Row():
+                folder_path_input = gr.Textbox(
+                    label="Image Folder Path / 图像文件夹路径",
+                    placeholder="Enter the folder path containing images / 输入包含图像的文件夹路径"
+                )
+                process_images_button = gr.Button("Process Images / 压缩图像")
 
-    with gr.Tab("Batch Image / 多图批处理"):
-        with gr.Row():
-            batch_dir_input = gr.Textbox(label="Batch Directory / 批量目录",
-                                         placeholder="Enter the directory path containing images for batch processing")
-        with gr.Row():
-            batch_process_submit = gr.Button("Batch Process Images / 批量处理图像", variant='primary')
-        with gr.Row():
-            batch_output = gr.Textbox(label="Batch Processing Output / 批量输出")
-            file_handling_mode = gr.Radio(
-                choices=["overwrite/覆盖", "prepend/前置插入", "append/末尾追加", "skip/跳过"],
-                value="overwrite/覆盖",
-                label="If a caption file exists: / 如果已经存在打标文件: "
-            )
-        with gr.Row():
-            stop_button = gr.Button("Stop Batch Processing / 停止批量处理")
-            stop_button.click(stop_batch_processing, inputs=[], outputs=batch_output)
+            with gr.Row():
+                # Add a Markdown component to display the warning message
+                gr.Markdown("""
+            ⚠ **Warning / 警告**: This preprocessing process will resize and compress all image files into jpg format with a total pixel count ≤ 1024×1024 while maintaining the original aspect ratio, ensuring that both dimensions are multiples of 32. **Please make sure to backup your original files before processing!** This procedure can reduce the size of the training set, help to speed up the labeling process, and decrease the time taken to cache latents to disk during training.
 
-    with gr.Tab("Failed File Screening / 打标失败文件筛查"):
-        folder_input = gr.Textbox(label="Folder Input / 文件夹输入", placeholder="Enter the directory path")
-        keywords_input = gr.Textbox(placeholder="Enter keywords, e.g., sorry,error / 请输入检索关键词，例如：sorry,error",
-                                    label="Keywords (optional) / 检索关键词（可选）")
-        run_button = gr.Button("Run Script / 运行脚本", variant='primary')
-        output_area = gr.Textbox(label="Script Output / 脚本输出")
+            本预处理过程将会在保持原图长宽比情况下，把所有图像文件裁剪压缩为总像素≤1024×1024的jpg文件，并且长宽像素均为32的倍数。**请务必在处理前备份源文件！**该过程可以缩小训练集体积，有助于加快打标速度，并缩短训练过程中的Cache latents to disk时间。
+                """)
 
-        run_button.click(fn=run_script, inputs=[folder_input, keywords_input], outputs=output_area)
+            with gr.Row():
+                image_processing_output = gr.Textbox(
+                    label="Image Processing Output / 图像处理输出",
+                    lines=3
+                )
+
+            process_images_button.click(process_images_in_folder,
+                inputs=[folder_path_input],
+                outputs=[image_processing_output])
+
+        with gr.Tab("Single Image / 单图处理"):
+            with gr.Row():
+                image_input = gr.Image(type='filepath', label="Upload Image / 上传图片")
+                single_image_output = gr.Textbox(label="Caption Output / 标签输出")
+            with gr.Row():
+                single_image_submit = gr.Button("Caption Single Image / 图片打标", variant='primary')
+
+        with gr.Tab("Batch Image / 多图批处理"):
+            with gr.Row():
+                batch_dir_input = gr.Textbox(label="Batch Directory / 批量目录",
+                                             placeholder="Enter the directory path containing images for batch processing")
+            with gr.Row():
+                batch_process_submit = gr.Button("Batch Process Images / 批量处理图像", variant='primary')
+            with gr.Row():
+                batch_output = gr.Textbox(label="Batch Processing Output / 批量输出")
+                file_handling_mode = gr.Radio(
+                    choices=["overwrite/覆盖", "prepend/前置插入", "append/末尾追加", "skip/跳过"],
+                    value="overwrite/覆盖",
+                    label="If a caption file exists: / 如果已经存在打标文件: "
+                )
+            with gr.Row():
+                stop_button = gr.Button("Stop Batch Processing / 停止批量处理")
+                stop_button.click(stop_batch_processing, inputs=[], outputs=batch_output)
+
+        with gr.Tab("Failed File Screening / 打标失败文件筛查"):
+            folder_input = gr.Textbox(label="Folder Input / 文件夹输入", placeholder="Enter the directory path")
+            keywords_input = gr.Textbox(placeholder="Enter keywords, e.g., sorry,error / 请输入检索关键词，例如：sorry,error",
+                                        label="Keywords (optional) / 检索关键词（可选）")
+            run_button = gr.Button("Run Script / 运行脚本", variant='primary')
+            output_area = gr.Textbox(label="Script Output / 脚本输出")
+
+            run_button.click(fn=run_script, inputs=[folder_input, keywords_input], outputs=output_area)
+
+    with gr.Tab("Extra Function / 额外功能"):
+        
+        gr.Markdown("""
+                    以下功能基于CogVLM开发（GPT4未经测试），极力推荐使用CogVLM-vqa以达到最佳效果。\n
+                    This function is developed based on CogVLM (GPT4 not tested), and it is strongly recommended to use CogVLM-vqa for optimal results.
+                    """)
+
+        with gr.Tab("Watermark Detection / 批量水印检测"):
+            with gr.Row():
+                detect_batch_dir_input = gr.Textbox(label="Image Directory / 图片目录",
+                                                    placeholder="Enter the directory path containing images for batch processing")
+            with gr.Row():
+                watermark_dir = gr.Textbox(label="Watermark Detected Image Directory / 检测到水印的图片目录",
+                                           placeholder="Enter the directory path to move/copy detected images")
+                detect_file_handling_mode = gr.Radio(choices=["move/移动", "copy/复制"], value="move/移动",
+                                                     label="If watermark is detected / 如果图片检测到水印 ")
+            with gr.Row():
+                batch_detect_submit = gr.Button("Batch Detect Images / 批量检测图像", variant='primary')
+            with gr.Row():
+                detect_batch_output = gr.Textbox(label="Output / 结果")
+            with gr.Row():
+                detect_stop_button = gr.Button("Stop Batch Processing / 停止批量处理")
+                detect_stop_button.click(stop_batch_processing, inputs=[], outputs=detect_batch_output)
+        '''
+        with gr.Tab("WD1.4 Tag Polishing / WD1.4 标签润色"):
+            gr.Markdown("""
+                    本功能完全是基于CogVLM开发（GPT4未经测试），极力推荐使用CogVLM-vqa以达到最佳效果。\n
+                    This function is fully developed based on CogVLM (GPT4 not tested), and it is strongly recommended to use CogVLM-vqa for optimal results.
+                    """)
+            with gr.Row():
+                input = "Describe this image in a very detailed manner and refer these prompt tags:{大括号里替换为放置额外tags文件的目录，会自动读取和图片同名txt。比如 D:\abc\}"
+        
+        with gr.Tab("Aesthetic Scoring / 美学评分"):
+        '''
+    def caption_image(api_key, api_url, prompt, image, quality, timeout):
+        if image:
+            return process_single_image(api_key, prompt, api_url, image, quality, timeout)
+
+    def batch_process(api_key, api_url, prompt, batch_dir, file_handling_mode, quality, timeout):
+        process_batch_images(api_key, prompt, api_url, batch_dir, file_handling_mode, quality, timeout)
+        return "Batch processing complete. Captions saved or updated as '.txt' files next to images."
+
+    def batch_detect(api_key, api_url, prompt, batch_dir, detect_file_handling_mode, quality, timeout, watermark_dir):
+        results = process_batch_watermark_detection(api_key, prompt, api_url, batch_dir, detect_file_handling_mode,
+                                                    quality, timeout,watermark_dir)
+        return results
+
+    single_image_submit.click(caption_image,
+                              inputs=[api_key_input, api_url_input, prompt_input, image_input, quality, timeout_input],
+                              outputs=single_image_output)
+    batch_process_submit.click(batch_process,
+                               inputs=[api_key_input, api_url_input, prompt_input, batch_dir_input, 
+                                       file_handling_mode, quality, timeout_input],
+                               outputs=batch_output)
+    batch_detect_submit.click(batch_detect,
+                              inputs=[api_key_input, api_url_input, prompt_input, detect_batch_dir_input, 
+                                      detect_file_handling_mode, quality, timeout_input, watermark_dir],
+                              outputs=detect_batch_output)
 
     with gr.Tab("Tag Manage / 标签处理"):
 
@@ -314,80 +401,6 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                                         translate_tags_input, api_key_input, api_url_input], # 新增翻译复选框
                                   outputs=[tag_counts_output, wordcloud_output, network_graph_output, output_message])
 
-    with gr.Tab("Image Zip / 图像预压缩"):
-        with gr.Row():
-            folder_path_input = gr.Textbox(
-                label="Image Folder Path / 图像文件夹路径",
-                placeholder="Enter the folder path containing images / 输入包含图像的文件夹路径"
-            )
-            process_images_button = gr.Button("Process Images / 压缩图像")
-
-        with gr.Row():
-            # Add a Markdown component to display the warning message
-            gr.Markdown("""
-        ⚠ **Warning / 警告**: This preprocessing process will resize and compress all image files into jpg format with a total pixel count ≤ 1024×1024 while maintaining the original aspect ratio, ensuring that both dimensions are multiples of 32. **Please make sure to backup your original files before processing!** This procedure can reduce the size of the training set, help to speed up the labeling process, and decrease the time taken to cache latents to disk during training.
-
-        本预处理过程将会在保持原图长宽比情况下，把所有图像文件裁剪压缩为总像素≤1024×1024的jpg文件，并且长宽像素均为32的倍数。**请务必在处理前备份源文件！**该过程可以缩小训练集体积，有助于加快打标速度，并缩短训练过程中的Cache latents to disk时间。
-            """)
-
-        with gr.Row():
-            image_processing_output = gr.Textbox(
-                label="Image Processing Output / 图像处理输出",
-                lines=3
-            )
-
-        process_images_button.click(process_images_in_folder,
-            inputs=[folder_path_input],
-            outputs=[image_processing_output])
-
-    with gr.Tab("Watermark Detection / 批量水印检测"):
-        gr.Markdown("""
-                本功能完全是基于CogVLM开发（GPT4未经测试），极力推荐使用CogVLM-vqa以达到最佳效果。\n
-                This function is fully developed based on CogVLM (GPT4 not tested), and it is strongly recommended to use CogVLM-vqa for optimal results.
-                """)
-        with gr.Row():
-            detect_batch_dir_input = gr.Textbox(label="Image Directory / 图片目录",
-                                                placeholder="Enter the directory path containing images for batch processing")
-        with gr.Row():
-            watermark_dir = gr.Textbox(label="Watermark Detected Image Directory / 检测到水印的图片目录",
-                                       placeholder="Enter the directory path to move/copy detected images")
-            detect_file_handling_mode = gr.Radio(choices=["move/移动", "copy/复制"], value="move/移动",
-                                                 label="If watermark is detected / 如果图片检测到水印 ")
-        with gr.Row():
-            batch_detect_submit = gr.Button("Batch Detect Images / 批量检测图像", variant='primary')
-        with gr.Row():
-            detect_batch_output = gr.Textbox(label="Output / 结果")
-        with gr.Row():
-            detect_stop_button = gr.Button("Stop Batch Processing / 停止批量处理")
-            detect_stop_button.click(stop_batch_processing, inputs=[], outputs=detect_batch_output)
-
-    def batch_process(api_key, api_url, prompt, batch_dir, file_handling_mode, quality, timeout):
-        process_batch_images(api_key, prompt, api_url, batch_dir, file_handling_mode, quality, timeout)
-        return "Batch processing complete. Captions saved or updated as '.txt' files next to images."
-
-
-    def batch_detect(api_key, api_url, prompt, batch_dir, detect_file_handling_mode, quality, timeout, watermark_dir):
-        results = process_batch_watermark_detection(api_key, prompt, api_url, batch_dir, detect_file_handling_mode,
-                                                    quality, timeout,watermark_dir)
-        return results
-
-
-    def caption_image(api_key, api_url, prompt, image, quality, timeout):
-        if image:
-            return process_single_image(api_key, prompt, api_url, image, quality, timeout)
-
-
-    single_image_submit.click(caption_image,
-                              inputs=[api_key_input, api_url_input, prompt_input, image_input, quality, timeout_input],
-                              outputs=single_image_output)
-    batch_process_submit.click(batch_process,
-                               inputs=[api_key_input, api_url_input, prompt_input, batch_dir_input, 
-                                       file_handling_mode, quality, timeout_input],
-                               outputs=batch_output)
-    batch_detect_submit.click(batch_detect,
-                              inputs=[api_key_input, api_url_input, prompt_input, detect_batch_dir_input, 
-                                      detect_file_handling_mode, quality, timeout_input, watermark_dir],
-                              outputs=detect_batch_output)
 
     # CogVLM一键
     with gr.Tab("API Config / API配置"):
@@ -426,7 +439,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         detect_button.click(detecter, outputs=detecter_output)
         download_button.click(downloader, inputs=[models_select, acceleration_select], 
                               outputs=detecter_output)
-        install_button.click(installer, inputs=[acceleration_select], outputs=detecter_output)
+        install_button.click(installer, outputs=detecter_output)
         switch_button.click(switch_API, inputs=[switch_select, models_switch, A_state],
                             outputs=[api_key_input, api_url_input, timeout_input, A_state])
         set_default.click(save_state, inputs=models_switch, outputs=A_state)
