@@ -3,6 +3,7 @@ myenv/
 __pycache__/
 models/
 releases/
+huggingface/
 
 # 忽略特定的配置文件和图片
 api_settings.json
@@ -16,3 +17,4 @@ Thumbs.db
 *.pyproj
 *.user
 *.sln
+
