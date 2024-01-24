@@ -323,17 +323,13 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             with gr.Row():
                 detect_stop_button = gr.Button("Stop Batch Processing / 停止批量处理")
                 detect_stop_button.click(stop_batch_processing, inputs=[], outputs=detect_batch_output)
-        '''
         with gr.Tab("WD1.4 Tag Polishing / WD1.4 标签润色"):
             gr.Markdown("""
-                    本功能完全是基于CogVLM开发（GPT4未经测试），极力推荐使用CogVLM-vqa以达到最佳效果。\n
-                    This function is fully developed based on CogVLM (GPT4 not tested), and it is strongly recommended to use CogVLM-vqa for optimal results.
+                    使用WD1.4对图片进行打标后，在上方prompt中使用“Describe this image in a very detailed manner and refer these prompt tags:{大括号里替换为放置额外tags文件的目录，会自动读取和图片同名txt。比如 D:\ abc\}”\n
+                    After marking the image using WD1.4, enter the prompt in the “” marks in the prompt box above.
+                        “Replace this with the directory where additional tags files are placed, which will automatically read the txt file with the same name as the image. For example, D: \ abc\}”
                     """)
-            with gr.Row():
-                input = "Describe this image in a very detailed manner and refer these prompt tags:{大括号里替换为放置额外tags文件的目录，会自动读取和图片同名txt。比如 D:\abc\}"
-        
-        with gr.Tab("Aesthetic Scoring / 美学评分"):
-        '''
+
     def caption_image(api_key, api_url, prompt, image, quality, timeout):
         if image:
             return process_single_image(api_key, prompt, api_url, image, quality, timeout)
