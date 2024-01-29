@@ -430,8 +430,8 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                     """)
         with gr.Tab("Image filtering / 图片筛选"):
             gr.Markdown("""
-                        使用自定义规则筛选图片，将回答中包含或不包含对应词的图片放入对应规则的文件夹中。输出目录默认在源目录。\n
-                        Use custom rules to filter images. Place images containing or not containing corresponding words in the corresponding rule folder in the answer. Output Directory default in source directory.
+                        使用自定义规则筛选图片，将回答中包含或不包含对应词的图片放入对应规则的文件夹中。输出目录默认在源目录下的classify_output文件夹下。\n
+                        Use custom rules to filter images. Place images containing or not containing corresponding words in the corresponding rule folder in the answer. Output Directory default in source directory \classify_output.
                         """)
             with gr.Row():
                 classify_output = gr.Textbox(label="Output / 结果")
@@ -440,7 +440,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             with gr.Row():
                 classify_dir = gr.Textbox(label="Input Image Directory / 输入图片目录",placeholder="Enter the directory path")
                 classify_output_dir = gr.Textbox(label="Output Directory / 输出目录", placeholder="Default source directory / 默认源目录")
-                classify_handling_mode = gr.Radio(choices=["move/移动", "copy/复制"], value="move/移动")
+                classify_handling_mode = gr.Radio(label="If meets / 如果符合",choices=["move/移动", "copy/复制"], value="move/移动")
 
             rule_inputs = []
             for i in range(1,11):
