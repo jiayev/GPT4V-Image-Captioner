@@ -11,6 +11,27 @@ from huggingface_hub import snapshot_download
 
 API_PATH = 'api_settings.json'
 
+# 扩展prompt {} 标记功能，从文件读取额外内容
+def addition_prompt_process(prompt, image_path):
+    # 从image_path分离文件名和扩展名，并更改扩展名为.txt
+    if '{' not in prompt and '}' not in prompt:
+        return prompt
+    file_root, _ = os.path.splitext(image_path)
+    new_file_name = os.path.basename(file_root) + ".txt"
+    # 从prompt中提取目录路径
+    directory_path = prompt[prompt.find('{') + 1: prompt.find('}')]
+    # 拼接新的文件路径
+    full_path = os.path.join(directory_path, new_file_name)
+    # 读取full_path指定的文件内容
+    try:
+        with open(full_path, 'r') as file:
+            file_content = file.read()
+    except Exception as e:
+        return f"Error reading file: {e}"
+
+    new_prompt = prompt.replace('{' + directory_path + '}', file_content)
+    return new_prompt
+
 # API使用
 def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=10):
     prompt = addition_prompt_process(prompt, image_path)
@@ -72,28 +93,6 @@ def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=1
         return caption
     except Exception as e:
         return f"Failed to parse the API response: {e}\n{response.text}"
-
-
-# 扩展prompt {} 标记功能，从文件读取额外内容
-def addition_prompt_process(prompt, image_path):
-    # 从image_path分离文件名和扩展名，并更改扩展名为.txt
-    if '{' not in prompt and '}' not in prompt:
-        return prompt
-    file_root, _ = os.path.splitext(image_path)
-    new_file_name = os.path.basename(file_root) + ".txt"
-    # 从prompt中提取目录路径
-    directory_path = prompt[prompt.find('{') + 1: prompt.find('}')]
-    # 拼接新的文件路径
-    full_path = os.path.join(directory_path, new_file_name)
-    # 读取full_path指定的文件内容
-    try:
-        with open(full_path, 'r') as file:
-            file_content = file.read()
-    except Exception as e:
-        return f"Error reading file: {e}"
-
-    new_prompt = prompt.replace('{' + directory_path + '}', file_content)
-    return new_prompt
 
 
 # API存档
