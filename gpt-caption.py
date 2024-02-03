@@ -563,7 +563,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         install_button.click(installer, outputs=detecter_output)
         switch_button.click(switch_API, inputs=[switch_select, models_switch, A_state],
                             outputs=[api_key_input, api_url_input, timeout_input, A_state])
-        set_default.click(save_state, inputs=models_switch, outputs=A_state)
+        set_default.click(save_state, inputs=[switch_select, models_switch, api_key_input, api_url_input], outputs=A_state)
 
     gr.Markdown(
         "### Developers: [Jiaye](https://civitai.com/user/jiayev1),&nbsp;&nbsp;[LEOSAM 是只兔狲](https://civitai.com/user/LEOSAM),&nbsp;&nbsp;[SleeeepyZhou](https://civitai.com/user/SleeeepyZhou),&nbsp;&nbsp;[Fok](https://civitai.com/user/fok3827)&nbsp;&nbsp;|&nbsp;&nbsp;Welcome everyone to add more new features to this project.")
