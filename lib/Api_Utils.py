@@ -150,15 +150,18 @@ def save_state(llm, mod, key, url):
             'api_key': key,
             'api_url': url
         }
+        output = f"Set {llm} as default. / {llm}已设为默认"
     else:
         settings = {
             'model' : f'Cog-{mod}',
             'api_key': "",
             'api_url': "http://127.0.0.1:8000/v1/chat/completions"
         }
+        output = f"Set {mod} as default. / {mod}已设为默认"
     with open(API_PATH, 'w', encoding='utf-8') as f:
         json.dump(settings, f)
-    return f"Set {mod} as default. / {mod}已设为默认"
+    
+    return output
 
 def get_api_details():
     # 读取API设置
