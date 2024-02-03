@@ -19,39 +19,20 @@ from io import BytesIO
 
 import argparse
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--model", type=str, default="vqa")
-args = parser.parse_args()
-mod = args.model
-
-mod_vqa = './models/cogagent-vqa-hf'
-mod_chat = './models/cogagent-chat-hf'
-
-if mod == "vqa":
-    MODEL_PATH = mod_vqa
-    language_processor_version = "chat_old"
-else:
-    MODEL_PATH = mod_chat
-    language_processor_version = "chat"
+torch.set_grad_enabled(False)
 
 TOKENIZER_PATH = os.environ.get("TOKENIZER_PATH", 'lmsys/vicuna-7b-v1.5')
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-
+# 生命周期管理器，结束清显存
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    An asynchronous context manager for managing the lifecycle of the FastAPI app.
-    It ensures that GPU memory is cleared after the app's lifecycle ends, which is essential for efficient resource management in GPU environments.
-    """
     yield
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
         torch.cuda.ipc_collect()
-
-
 app = FastAPI(lifespan=lifespan)
-
+# 允许跨域
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -60,60 +41,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-class ModelCard(BaseModel):
-    """
-    A Pydantic model representing a model card, which provides metadata about a machine learning model.
-    It includes fields like model ID, owner, and creation time.
-    """
-    id: str
-    object: str = "model"
-    created: int = Field(default_factory=lambda: int(time.time()))
-    owned_by: str = "owner"
-    root: Optional[str] = None
-    parent: Optional[str] = None
-    permission: Optional[list] = None
-
-
-class ModelList(BaseModel):
-    object: str = "list"
-    data: List[ModelCard] = []
-
-
-class ImageUrl(BaseModel):
-    url: str
-
-
+# 输入类
 class TextContent(BaseModel):
     type: Literal["text"]
     text: str
-
-
+class ImageUrl(BaseModel):
+    url: str
 class ImageUrlContent(BaseModel):
     type: Literal["image_url"]
     image_url: ImageUrl
-
-
 ContentItem = Union[TextContent, ImageUrlContent]
 
-
+# 输入字段
 class ChatMessageInput(BaseModel):
     role: Literal["user", "assistant", "system"]
     content: Union[str, List[ContentItem]]
     name: Optional[str] = None
 
-
-class ChatMessageResponse(BaseModel):  # 模型回复的字段
+# 回复字段
+class ChatMessageResponse(BaseModel):
     role: Literal["assistant"]
     content: str = None
     name: Optional[str] = None
 
-
-class DeltaMessage(BaseModel):
-    role: Optional[Literal["user", "assistant", "system"]] = None
-    content: Optional[str] = None
-
-
+# 请求
 class ChatCompletionRequest(BaseModel):
     model: str
     messages: List[ChatMessageInput]
@@ -124,38 +75,26 @@ class ChatCompletionRequest(BaseModel):
     # Additional parameters
     repetition_penalty: Optional[float] = 1.0
 
-
+# 响应
 class ChatCompletionResponseChoice(BaseModel):
     index: int
     message: ChatMessageResponse
-
-
+class DeltaMessage(BaseModel):
+    role: Optional[Literal["user", "assistant", "system"]] = None
+    content: Optional[str] = None
 class ChatCompletionResponseStreamChoice(BaseModel):
     index: int
     delta: DeltaMessage
-
-
 class UsageInfo(BaseModel):
     prompt_tokens: int = 0
     total_tokens: int = 0
     completion_tokens: Optional[int] = 0
-
-
 class ChatCompletionResponse(BaseModel):
     model: str
     object: Literal["chat.completion", "chat.completion.chunk"]
     choices: List[Union[ChatCompletionResponseChoice, ChatCompletionResponseStreamChoice]]
     created: Optional[int] = Field(default_factory=lambda: int(time.time()))
     usage: Optional[UsageInfo] = None
-
-@app.get("/v1/models", response_model=ModelList)
-async def list_models():
-    """
-    An endpoint to list available models. It returns a list of model cards.
-    This is useful for clients to query and understand what models are available for use.
-    """
-    model_card = ModelCard(id="cogvlm-chat-17b") # can be replaced by your model id like cogagent-chat-18b
-    return ModelList(data=[model_card])
 
 
 @app.post("/v1/chat/completions", response_model=ChatCompletionResponse)
@@ -376,7 +315,25 @@ def load_mod(model_input):
             low_cpu_mem_usage=True
         ).eval()
     else:
-        model = AutoModelForCausalLM.from_pretrained(model_input, trust_remote_code=True).float().to(DEVICE).eval()
+        model = AutoModelForCausalLM.from_pretrained(
+            model_input, 
+            trust_remote_code=True
+        ).float().to(DEVICE).eval()
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--model", type=str, default="vqa")
+args = parser.parse_args()
+mod = args.model
+
+mod_vqa = './models/cogagent-vqa-hf'
+mod_chat = './models/cogagent-chat-hf'
+
+if mod == "vqa":
+    MODEL_PATH = mod_vqa
+    language_processor_version = "chat_old"
+else:
+    MODEL_PATH = mod_chat
+    language_processor_version = "chat"
 
 @app.post("/v1/vqa")
 async def shutdown():
