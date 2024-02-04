@@ -16,3 +16,4 @@ openai
 fastapi
 httpx
 uvicorn
+dashscope

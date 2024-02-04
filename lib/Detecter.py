@@ -1,6 +1,5 @@
 ﻿import importlib
 import GPUtil
-import subprocess
 from numpy import require
 
 def check_memory():
@@ -60,15 +59,3 @@ def is_installed(package):
         return spec is not None
 
     return dist is not None
-
-# 启动检查
-def check_open():
-    require_path = "./install_script/requirements.txt"
-    missings = install_detection(require_path)
-    installed = print_missing(missings)
-    if installed == "":
-        return
-    else:
-        print(installed)
-        for lib in missings:
-            subprocess.check_call(["pip", "install", lib])
