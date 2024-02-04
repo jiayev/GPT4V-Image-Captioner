@@ -54,15 +54,18 @@ def qwen_api(image_path, prompt, api_key):
         }]
 
     response = MultiModalConversation.call(model='qwen-vl-plus', messages=messages, stream=False, max_length=300)
-    if 'error' in response:
-        return f"API error: {response['error']['message']}"
-    if response["output"]["choices"][0]["message"]["content"][0].get("text", False):
-        caption = response["output"]["choices"][0]["message"]["content"][0]["text"]
+    if '"status_code": 400' in response:
+        return f"API error: {response}"
+    if response.get("output") and response["output"].get("choices") and response["output"]["choices"][0].get("message") and response["output"]["choices"][0]["message"].get("content"):
+        if response["output"]["choices"][0]["message"]["content"][0].get("text", False):
+            caption = response["output"]["choices"][0]["message"]["content"][0]["text"]
+        else:
+            box_value = response["output"]["choices"][0]["message"]["content"][0]["box"]
+            text_value = response["output"]["choices"][0]["message"]["content"][1]["text"]
+            b_value = re.search(r'<ref>(.*?)</ref>', box_value).group(1)
+            caption = b_value + text_value
     else:
-        box_value = response["output"]["choices"][0]["message"]["content"][0]["box"]
-        text_value = response["output"]["choices"][0]["message"]["content"][1]["text"]
-        b_value = re.search(r'<ref>(.*?)</ref>', box_value).group(1)
-        caption = b_value + text_value
+        caption = response
     return caption
 
 def is_ali(api_url):
