@@ -8,3 +8,4 @@ gradio
 requests
 huggingface_hub
 GPUtil
+dashscope

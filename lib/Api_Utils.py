@@ -33,6 +33,30 @@ def addition_prompt_process(prompt, image_path):
     return new_prompt
 
 # API使用
+
+def qwen_api(image_path, prompt, api_key):
+    os.environ['DASHSCOPE_API_KEY'] = api_key
+    from dashscope import MultiModalConversation
+    img = f"file://{image_path}"
+    messages = [{
+        'role': 'system',
+        'content': [
+            {'text': 'You are a helpful assistant.'}
+            ]
+        }, {
+        'role':'user',
+        'content': [
+            {'image': img},
+            {'text': prompt},
+            ]
+        }]
+
+    response = MultiModalConversation.call(model='qwen-vl-plus', messages=messages)
+    if 'error' in response:
+        return f"API error: {response['error']['message']}"
+    caption = response["output"]["choices"][0]["message"]["content"][0]["text"]
+    return caption
+
 def is_ali(api_url):
     if api_url.endswith("/v1/services/aigc/multimodal-generation/generation"):
         return True
@@ -42,51 +66,32 @@ def is_ali(api_url):
 def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=10):
     prompt = addition_prompt_process(prompt, image_path)
     # print("prompt{}:",prompt)
+
+    # Qwen-VL
+    if is_ali(api_url):
+        return qwen_api(image_path, prompt, api_key)
+
     with open(image_path, "rb") as image_file:
         image_base64 = base64.b64encode(image_file.read()).decode('utf-8')
-
-    if is_ali(api_url):
-        # Qwen-VL
-        data = {
-            "model": "qwen-vl-chat-v1",
-            "input": {
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": [
-                            {"text": "You are a helpful assistant."}
-                        ]
-                    },
-                    {
-                        "role": "user",
-                        "content": [
-                            {"image": f"data:image/jpeg;base64,{image_base64}"},
-                            {"text": prompt}
-                        ]
+    
+    # GPT-4V
+    data = {
+        "model": "gpt-4-vision-preview",
+        "messages": [
+            {
+                "role": "user",
+                "content":
+                [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url":
+                        {"url": f"data:image/jpeg;base64,{image_base64}",
+                        "detail": f"{quality}"}
                     }
                 ]
-            },
-            "parameters": {}
-        }
-    else:
-        # GPT-4V
-        data = {
-            "model": "gpt-4-vision-preview",
-            "messages": [
-                {
-                    "role": "user",
-                    "content":
-                    [
-                        {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url":
-                            {"url": f"data:image/jpeg;base64,{image_base64}",
-                            "detail": f"{quality}"}
-                        }
-                    ]
-                }
-            ],
-            "max_tokens": 300
-        }
+            }
+        ],
+        "max_tokens": 300
+    }
 
     headers = {
         "Content-Type": "application/json",
@@ -121,15 +126,10 @@ def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=1
         if 'error' in response_data:
             return f"API error: {response_data['error']['message']}"
 
-        if is_ali(api_url):
-            caption = response_data["output"]["choices"][0]["message"]["content"]
-        else:
-            caption = response_data["choices"][0]["message"]["content"]
-
+        caption = response_data["choices"][0]["message"]["content"]
         return caption
     except Exception as e:
         return f"Failed to parse the API response: {e}\n{response.text}"
-
 
 # API存档
 def save_api_details(api_key, api_url):
