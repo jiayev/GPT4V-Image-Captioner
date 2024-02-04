@@ -122,9 +122,9 @@ def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=1
             return f"API error: {response_data['error']['message']}"
 
         if is_ali(api_url):
-            caption = response_data["choices"][0]["message"]["content"]
-        else:
             caption = response_data["output"]["choices"][0]["message"]["content"]
+        else:
+            caption = response_data["choices"][0]["message"]["content"]
 
         return caption
     except Exception as e:
