@@ -1,5 +1,7 @@
 ﻿import importlib
 import GPUtil
+import subprocess
+from numpy import require
 
 def check_memory():
     gpus = GPUtil.getGPUs()
@@ -8,9 +10,9 @@ def check_memory():
             return ""
     return "Insufficient GPU graphics memory for use. / 显存过小"
 
-def install_detection():
+def install_detection(requir_path):
     # 读
-    file_path = "./install_script/check.txt"
+    file_path = requir_path
     requirements = []
     with open(file_path, 'r') as file:
         for line in file:
@@ -23,25 +25,29 @@ def install_detection():
             importlib.import_module(libs)
         except ImportError:
             missing_libs.append(libs)
-    
+
+    return missing_libs
+
+def print_missing(missing_libs):
     # 返
     if missing_libs == []:
-        output = ""
+        return ""
     else:
-        output = f"Not installed libraries: {', '.join(missing_libs)}"
-    return output
+        return f"Not installed libraries: {', '.join(missing_libs)}"
 
 def detecter():
     gpu_check = check_memory()
     if gpu_check == "":
-        installed = install_detection()
+        cog_requir = "./install_script/check.txt"
+        installed = print_missing(install_detection(cog_requir))
+
         if installed == "":
             return "All listed libraries are installed. / Cog安装无误"
         else:
             return installed
     else:
         return gpu_check
-    
+
 def is_installed(package):
     try:
         dist = importlib.metadata.distribution(package)
@@ -54,3 +60,15 @@ def is_installed(package):
         return spec is not None
 
     return dist is not None
+
+# 启动检查
+def check_open():
+    require_path = "./install_script/requirements.txt"
+    missings = install_detection(require_path)
+    installed = print_missing(missings)
+    if installed == "":
+        return
+    else:
+        print(installed)
+        for lib in missings:
+            subprocess.check_call(["pip", "install", lib])

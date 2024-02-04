@@ -1,4 +1,3 @@
-from unittest import result
 import gradio as gr
 import os
 import shutil
@@ -16,7 +15,7 @@ from lib.Img_Processing import process_images_in_folder, run_script
 from lib.Tag_Processor import modify_file_content, process_tags
 from lib.GPT_Prompt import get_prompts_from_csv, save_prompt, delete_prompt
 from lib.Api_Utils import run_openai_api, save_api_details, get_api_details, downloader, installer, save_state
-from lib.Detecter import detecter
+from lib.Detecter import detecter, check_open
 
 
 os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
@@ -569,6 +568,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
         "### Developers: [Jiaye](https://civitai.com/user/jiayev1),&nbsp;&nbsp;[LEOSAM 是只兔狲](https://civitai.com/user/LEOSAM),&nbsp;&nbsp;[SleeeepyZhou](https://civitai.com/user/SleeeepyZhou),&nbsp;&nbsp;[Fok](https://civitai.com/user/fok3827)&nbsp;&nbsp;|&nbsp;&nbsp;Welcome everyone to add more new features to this project.")
 
 if __name__ == "__main__":
+    check_open()
     if mod_default != 'GPT':
         threading.Thread(target=lambda: switch_API('Cog', mod_default[-3:], 'GPT')).start()
     demo.launch(server_name="0.0.0.0",server_port=8848,share=True)
