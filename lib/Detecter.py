@@ -1,6 +1,5 @@
 ﻿import importlib
 import GPUtil
-from numpy import require
 
 def check_memory():
     gpus = GPUtil.getGPUs()
