@@ -160,7 +160,6 @@ def save_state(llm, mod, key, url):
         output = f"Set {mod} as default. / {mod}已设为默认"
     with open(API_PATH, 'w', encoding='utf-8') as f:
         json.dump(settings, f)
-    
     return output
 
 def get_api_details():
@@ -214,19 +213,3 @@ def installer():
         result_string = file.read()
     os.remove('install_temp.txt')
     return result_string
-
-# Qwen相关
-from http import HTTPStatus
-import dashscope
-def call_with_prompt():
-    response = dashscope.Generation.call(
-        model=dashscope.Generation.Models.qwen_turbo,
-        prompt='如何做炒西红柿鸡蛋？'
-    )
-
-    if response.status_code == HTTPStatus.OK:
-        print(response.output)  # The output text
-        print(response.usage)  # The usage information
-    else:
-        print(response.code)  # The error code.
-        print(response.message)  # The error message.
