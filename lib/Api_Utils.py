@@ -6,6 +6,7 @@ import requests
 import subprocess
 import platform
 from requests.adapters import HTTPAdapter
+import re
 from urllib3.util.retry import Retry
 from huggingface_hub import snapshot_download
 
@@ -35,6 +36,7 @@ def addition_prompt_process(prompt, image_path):
 # API使用
 
 def qwen_api(image_path, prompt, api_key):
+    print(image_path)
     os.environ['DASHSCOPE_API_KEY'] = api_key
     from dashscope import MultiModalConversation
     img = f"file://{image_path}"
@@ -51,10 +53,16 @@ def qwen_api(image_path, prompt, api_key):
             ]
         }]
 
-    response = MultiModalConversation.call(model='qwen-vl-plus', messages=messages)
+    response = MultiModalConversation.call(model='qwen-vl-plus', messages=messages, stream=False, max_length=300)
     if 'error' in response:
         return f"API error: {response['error']['message']}"
-    caption = response["output"]["choices"][0]["message"]["content"][0]["text"]
+    if response["output"]["choices"][0]["message"]["content"][0].get("text", False):
+        caption = response["output"]["choices"][0]["message"]["content"][0]["text"]
+    else:
+        box_value = response["output"]["choices"][0]["message"]["content"][0]["box"]
+        text_value = response["output"]["choices"][0]["message"]["content"][1]["text"]
+        b_value = re.search(r'<ref>(.*?)</ref>', box_value).group(1)
+        caption = b_value + text_value
     return caption
 
 def is_ali(api_url):
@@ -73,7 +81,7 @@ def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=1
 
     with open(image_path, "rb") as image_file:
         image_base64 = base64.b64encode(image_file.read()).decode('utf-8')
-    
+
     # GPT-4V
     data = {
         "model": "gpt-4-vision-preview",
