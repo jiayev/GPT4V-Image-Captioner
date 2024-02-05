@@ -10,7 +10,7 @@
 
 - 一键安装及使用
 - 单图反推及批量打标功能
-- 云端GPT4V & 本地CogVLM双模型可选
+- 云端GPT4V 或 阿里云[通义千问VL](https://modelscope.cn/organization/qwen) & 本地CogVLM双模型可选
 - 可视化标签分析与处理
 - 图像分桶预压缩
 - 关键词筛查及水印图像识别
