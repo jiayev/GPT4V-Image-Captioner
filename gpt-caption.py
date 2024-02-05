@@ -578,4 +578,5 @@ with gr.Blocks(title="GPT4V captioner") as demo:
 
 if __name__ == "__main__":
     threading.Thread(target=lambda: switch_API(mod_default, 'GPT')).start()
-    demo.launch(server_name="0.0.0.0",server_port=8848,share=True)
+    demo.launch(server_name="0.0.0.0",server_port=8848,share=True,inbrowser=True)
+
