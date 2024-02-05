@@ -40,8 +40,7 @@ def qwen_api(image_path, prompt, api_key):
     
     os.environ['DASHSCOPE_API_KEY'] = api_key
     from dashscope import MultiModalConversation
-    encoded_image_path = urllib.parse.quote(image_path, safe='')
-    img = f"file://{encoded_image_path}"
+    img = f"file://{image_path}"
     messages = [{
         'role': 'system',
         'content': [
