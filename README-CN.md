@@ -4,6 +4,7 @@
 
 [英文版说明](https://github.com/jiayev/GPT4V-Image-Captioner/blob/main/README.md)
 
+现在我们有SDwebUI插件版本[sd-webui-GPT4V-Image-Captioner](https://github.com/SleeeepyZhou/sd-webui-GPT4V-Image-Captioner)。
 
 这是一款使用 Gradio 构建，可使用GPT-4-vision API或[cogVLM](https://github.com/THUDM/CogVLM)模型进行图像打标的多功能图像处理工具箱。特色功能包括：
 
