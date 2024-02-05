@@ -1,4 +1,5 @@
 import gradio as gr
+import argparse
 import os
 import shutil
 import threading
@@ -21,6 +22,15 @@ from lib.Detecter import detecter
 os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
 mod_default, saved_api_key, saved_api_url = get_api_details()
 SUPPORTED_IMAGE_FORMATS = ('.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif', '.tiff', '.tif')
+
+# 启动参数
+def get_args():
+    parser = argparse.ArgumentParser(description='GPT4V-Image-Captioner启动参数')
+    parser.add_argument("--port", type=int, default="8848", help="占用端口，默认8848")
+    parser.add_argument("--listen", action='store_true', help="打开远程连接，默认关闭")
+    parser.add_argument("--share", action='store_true', help="打开gradio共享，默认关闭")
+    return parser.parse_args()
+args = get_args()
 
 # 图像打标
 should_stop = threading.Event()
@@ -578,5 +588,10 @@ with gr.Blocks(title="GPT4V captioner") as demo:
 
 if __name__ == "__main__":
     threading.Thread(target=lambda: switch_API(mod_default, 'GPT')).start()
-    demo.launch(server_name="0.0.0.0",server_port=8848,share=True,inbrowser=True)
+    demo.launch(
+        server_name="0.0.0.0" if args.listen else None,
+        server_port=args.port,
+        share=args.share, 
+        inbrowser=True
+    )
 

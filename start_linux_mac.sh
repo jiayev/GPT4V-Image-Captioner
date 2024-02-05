@@ -5,6 +5,6 @@ source myenv/bin/activate
 
 python ./install_script/check_open.py
 
-python gpt-caption.py
+python gpt-caption.py --listen --share
 
 read -p "Press any key to continue . . . "
