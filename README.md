@@ -8,7 +8,7 @@ This is a multifunctional image processing toolbox built with Gradio, capable of
 
 - One-click installation and use
 - Single image and multi-image batch tagging
-- Choice of online GPT4V or [Qwen](https://huggingface.co/Qwen)(Alibaba Cloud) & local CogVLM models
+- Choice of online GPT4V or [Qwen-VL](https://huggingface.co/Qwen)(Alibaba Cloud) & local CogVLM models
 - Visual tag analysis and processing
 - Image pre-compression
 - Keyword filtering and watermark image recognition
