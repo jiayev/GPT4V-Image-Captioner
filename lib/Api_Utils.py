@@ -146,11 +146,18 @@ def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=1
 
 # API存档
 def save_api_details(api_key, api_url):
-    settings = {
-        'model' : 'GPT',
+    if is_ali(api_url):
+        settings = {
+        'model' : 'qwen-vl-plus',
         'api_key': api_key,
         'api_url': api_url
-    }
+        }
+    else:
+        settings = {
+            'model' : 'GPT',
+            'api_key': api_key,
+            'api_url': api_url
+        }
     # 不记录空的apikey
     if api_key != "":
         with open(API_PATH, 'w', encoding='utf-8') as f:
