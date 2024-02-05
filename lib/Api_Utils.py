@@ -11,6 +11,7 @@ from urllib3.util.retry import Retry
 from huggingface_hub import snapshot_download
 
 API_PATH = 'api_settings.json'
+QWEN_MOD = 'qwen-vl-plus'
 
 # 扩展prompt {} 标记功能，从文件读取额外内容
 def addition_prompt_process(prompt, image_path):
@@ -33,10 +34,21 @@ def addition_prompt_process(prompt, image_path):
     new_prompt = prompt.replace('{' + directory_path + '}', file_content)
     return new_prompt
 
-# API使用
+# 通义千问VL
+def is_ali(api_url):
+    if api_url.endswith("/v1/services/aigc/multimodal-generation/generation"):
+        return True
+    else:
+        return False
+
+def qwen_api_switch(mod):
+    global QWEN_MOD
+    QWEN_MOD = mod
+    return QWEN_MOD
 
 def qwen_api(image_path, prompt, api_key):
-    print(image_path)
+    print(f"QWEN_MOD: {QWEN_MOD}")
+
     os.environ['DASHSCOPE_API_KEY'] = api_key
     from dashscope import MultiModalConversation
     img = f"file://{image_path}"
@@ -53,24 +65,22 @@ def qwen_api(image_path, prompt, api_key):
             ]
         }]
 
-    response = MultiModalConversation.call(model='qwen-vl-plus', messages=messages, stream=False, max_length=300)
-    if 'error' in response:
-        return f"API error: {response['error']['message']}"
-    if response["output"]["choices"][0]["message"]["content"][0].get("text", False):
-        caption = response["output"]["choices"][0]["message"]["content"][0]["text"]
+    response = MultiModalConversation.call(model=QWEN_MOD, messages=messages, stream=False, max_length=300)
+    if '"status_code": 400' in response:
+        return f"API error: {response}"
+    if response.get("output") and response["output"].get("choices") and response["output"]["choices"][0].get("message") and response["output"]["choices"][0]["message"].get("content"):
+        if response["output"]["choices"][0]["message"]["content"][0].get("text", False):
+            caption = response["output"]["choices"][0]["message"]["content"][0]["text"]
+        else:
+            box_value = response["output"]["choices"][0]["message"]["content"][0]["box"]
+            text_value = response["output"]["choices"][0]["message"]["content"][1]["text"]
+            b_value = re.search(r'<ref>(.*?)</ref>', box_value).group(1)
+            caption = b_value + text_value
     else:
-        box_value = response["output"]["choices"][0]["message"]["content"][0]["box"]
-        text_value = response["output"]["choices"][0]["message"]["content"][1]["text"]
-        b_value = re.search(r'<ref>(.*?)</ref>', box_value).group(1)
-        caption = b_value + text_value
+        caption = response
     return caption
 
-def is_ali(api_url):
-    if api_url.endswith("/v1/services/aigc/multimodal-generation/generation"):
-        return True
-    else:
-        return False
-
+# API使用
 def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=10):
     prompt = addition_prompt_process(prompt, image_path)
     # print("prompt{}:",prompt)
@@ -141,43 +151,59 @@ def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=1
 
 # API存档
 def save_api_details(api_key, api_url):
-    settings = {
-        'model' : 'GPT',
+    if is_ali(api_url):
+        settings = {
+        'model' : QWEN_MOD,
         'api_key': api_key,
         'api_url': api_url
-    }
+        }
+    else:
+        settings = {
+            'model' : 'GPT',
+            'api_key': api_key,
+            'api_url': api_url
+        }
     # 不记录空的apikey
     if api_key != "":
         with open(API_PATH, 'w', encoding='utf-8') as f:
             json.dump(settings, f)
 
-def save_state(llm, mod, key, url):
-    if llm == "GPT":
+def save_state(llm, key, url):
+    if llm[:3] == "GPT" or llm[:4] == "qwen":
         settings = {
-            'model': 'GPT',
+            'model': llm,
             'api_key': key,
             'api_url': url
         }
-        output = f"Set {llm} as default. / {llm}已设为默认"
-    else:
+
+    elif llm[:3] == "Cog":
         settings = {
-            'model' : f'Cog-{mod}',
+            'model' : llm,
             'api_key': "",
             'api_url': "http://127.0.0.1:8000/v1/chat/completions"
         }
-        output = f"Set {mod} as default. / {mod}已设为默认"
+
+    output = f"Set {llm} as default. / {llm}已设为默认"
     with open(API_PATH, 'w', encoding='utf-8') as f:
         json.dump(settings, f)
     return output
 
+# 读取API设置
 def get_api_details():
-    # 读取API设置
     settings_file = API_PATH
     if os.path.exists(settings_file):
         with open(settings_file, 'r') as f:
             settings = json.load(f)
         if settings.get('model', '') != '':
-            return settings.get('model', ''), settings.get('api_key', ''), settings.get('api_url', '')
+            mod = settings.get('model', '')
+            url = settings.get('api_url', '')
+            if mod[:4] == "qwen":
+                global QWEN_MOD
+                QWEN_MOD = mod
+            else:
+                if is_ali(url):
+                    mod = QWEN_MOD
+            return mod, settings.get('api_key', ''), url
         else:
             if settings.get('api_key', '') != '':
                 i_key = settings.get('api_key', '')
