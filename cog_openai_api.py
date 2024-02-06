@@ -41,7 +41,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 输入类
+# 请求
 class TextContent(BaseModel):
     type: Literal["text"]
     text: str
@@ -51,20 +51,10 @@ class ImageUrlContent(BaseModel):
     type: Literal["image_url"]
     image_url: ImageUrl
 ContentItem = Union[TextContent, ImageUrlContent]
-
-# 输入字段
 class ChatMessageInput(BaseModel):
     role: Literal["user", "assistant", "system"]
     content: Union[str, List[ContentItem]]
     name: Optional[str] = None
-
-# 回复字段
-class ChatMessageResponse(BaseModel):
-    role: Literal["assistant"]
-    content: str = None
-    name: Optional[str] = None
-
-# 请求
 class ChatCompletionRequest(BaseModel):
     model: str
     messages: List[ChatMessageInput]
@@ -76,6 +66,10 @@ class ChatCompletionRequest(BaseModel):
     repetition_penalty: Optional[float] = 1.0
 
 # 响应
+class ChatMessageResponse(BaseModel):
+    role: Literal["assistant"]
+    content: str = None
+    name: Optional[str] = None
 class ChatCompletionResponseChoice(BaseModel):
     index: int
     message: ChatMessageResponse
@@ -346,6 +340,11 @@ async def shutdown():
     global model
     del model
     load_mod(mod_chat)
+
+@app.post("/v1/close")
+async def close():
+    global model
+    del model
 
 if __name__ == "__main__":
     tokenizer = LlamaTokenizer.from_pretrained(
