@@ -176,7 +176,7 @@ def save_state(llm, key, url):
             'api_url': url
         }
 
-    elif llm[:3] == "Cog":
+    elif llm[:3] == "Cog" or llm[:4] == "moon":
         settings = {
             'model' : llm,
             'api_key': "",
@@ -215,7 +215,7 @@ def get_api_details():
     return 'GPT', '', ''
 
 
-# Cog相关
+# 本地模型相关
 def downloader(model_type, acceleration):
     if acceleration == 'CN':
         os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
@@ -225,10 +225,15 @@ def downloader(model_type, acceleration):
             local_dir="./models/cogagent-vqa-hf",
             max_workers=8
         )
-    else:
+    elif model_type == 'chat':
         snapshot_download(
             repo_id="THUDM/cogagent-chat-hf",
             local_dir="./models/cogagent-chat-hf",
+            max_workers=8
+        )
+    else:
+        snapshot_download(
+            repo_id='vikhyatk/moondream1',
             max_workers=8
         )
     return f"{model_type} Model download completed. / {model_type}模型下载完成"

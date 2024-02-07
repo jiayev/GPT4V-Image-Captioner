@@ -275,7 +275,16 @@ def classify_images(api_key, api_url, quality, prompt, timeout, detect_file_hand
 
 # api
 def switch_API(api, state):
+    def is_connection():
+        try:
+            socket.create_connection(("127.0.0.1", 8000), timeout=1)
+            print("API has started.")
+            return True
+        except (socket.timeout, ConnectionRefusedError):
+            return False
     if api[:3] == 'GPT' or api[:4] == "qwen":
+        if is_connection():
+            requests.post(f"http://127.0.0.1:8000/v1/close")
         key = saved_api_key
         url = saved_api_url
         time_out = 10
@@ -285,20 +294,12 @@ def switch_API(api, state):
             mod = 'GPT4V'
         s_state = mod
 
-    elif api[:3] == 'Cog':
-        def is_connection():
-            try:
-                socket.create_connection(("127.0.0.1", 8000), timeout=1)
-                print("API has started.")
-                return True
-            except (socket.timeout, ConnectionRefusedError):
-                return False
-
+    elif api[:3] == 'Cog' or api[:4] == "moon":
         if is_connection():
-            if state[-3:] != api[-3:]:
-                requests.post(f"http://127.0.0.1:8000/v1/{api[-3:]}")
+            if state != api:
+                requests.post(f"http://127.0.0.1:8000/v1/{api}")
         else:
-            API_command = f'python cog_openai_api.py --model {api[-3:]}'
+            API_command = f'python openai_api.py --model {api}'
             subprocess.Popen(API_command,shell=True)
             while True:
                 if is_connection():
@@ -310,7 +311,7 @@ def switch_API(api, state):
         key = ""
         url = "http://127.0.0.1:8000/v1/chat/completions"
         time_out = 300
-        s_state = f"Cog-{api[-3:]}"
+        s_state = api
 
     return key, url, time_out, s_state
 
@@ -554,7 +555,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                 detecter_output = gr.Textbox(label="Check Env / 环境检测", interactive=False)
                 detect_button = gr.Button("Check / 检查", variant='primary')
             with gr.Row():
-                models_select = gr.Radio(label="Choose Models / 选择模型", choices=["vqa", "chat"], value="vqa")
+                models_select = gr.Radio(label="Choose Models / 选择模型", choices=["moondream","vqa", "chat"], value="moon")
                 acceleration_select = gr.Radio(label="Choose Default Plz / 选择是否国内加速(如果使用国内加速,请关闭魔法上网)", choices=["CN", "default"],
                                                value="CN")
                 download_button = gr.Button("Download Models / 下载模型", variant='primary')
@@ -565,6 +566,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             "GPT4V",
             "qwen-vl-plus",
             "qwen-vl-max",
+            "moondrean",
             "Cog-vqa",
             "Cog-chat"
             ]
