@@ -152,14 +152,7 @@ def generate_stream_moondream(params: dict):
         return prompt
 
     messages = params["messages"]
-
-    temperature = float(params.get("temperature", 1.0))
-    repetition_penalty = float(params.get("repetition_penalty", 1.0))
-    top_p = float(params.get("top_p", 1.0))
-    max_new_tokens = int(params.get("max_tokens", 128))
-
     prompt, formatted_history, image_list = process_history_and_images(messages)
-    history = chat_history_to_prompt(formatted_history)
     # 只处理最后一张图
     img = image_list[-1]
 
@@ -181,15 +174,7 @@ def generate_stream_moondream(params: dict):
             "image_embeds": image_embeds,
             "question": prompt,
             "tokenizer": tokenizer,
-            "max_new_tokens": max_new_tokens,
-            "chat_history":history,
-            "repetition_penalty": repetition_penalty,
-            "do_sample": False,
-            "top_p": top_p,
-            "streamer": streamer,
         }
-    if temperature > 1e-5:
-        gen_kwargs["temperature"] = temperature
 
     thread = Thread(
         target=model.answer_question,
@@ -373,7 +358,7 @@ MODEL_PATH = ""
 # 模型加载
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 def load_mod(model_input, mod_type):
-    global model, tokenizer
+    global model, tokenizer, language_processor_version
     if mod_type == "cog":
         tokenizer_path = os.environ.get("TOKENIZER_PATH", 'lmsys/vicuna-7b-v1.5')
         tokenizer = LlamaTokenizer.from_pretrained(
@@ -401,37 +386,41 @@ def load_mod(model_input, mod_type):
 
 @app.post("/v1/Cog-vqa")
 async def switch_vqa():
-    global model, STATE_MOD
+    global model, STATE_MOD, mod_vqa
     STATE_MOD = "cog"
     del model
-    load_mod(mod_vqa)
+    model = None
+    load_mod(mod_vqa, STATE_MOD)
 
 @app.post("/v1/Cog-chat")
 async def switch_chat():
-    global model, STATE_MOD
+    global model, STATE_MOD, mod_chat
     STATE_MOD = "cog"
     del model
-    load_mod(mod_chat)
+    model = None
+    load_mod(mod_chat, STATE_MOD)
 
 @app.post("/v1/moondream")
 async def switch_moon():
-    global model, STATE_MOD
+    global model, STATE_MOD, mod_moon
     STATE_MOD = "moon"
     del model
-    load_mod(mod_moon)
+    model = None
+    load_mod(mod_moon, STATE_MOD)
 
 # 关闭
 @app.post("/v1/close")
 async def close():
     global model
     del model
+    model = None
 
 gc.collect()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model", type=str, default="moon")
+parser.add_argument("--mod", type=str, default="moondrean")
 args = parser.parse_args()
-mod = args.model
+mod = args.mod
 
 mod_vqa = './models/cogagent-vqa-hf'
 mod_chat = './models/cogagent-chat-hf'
@@ -453,7 +442,7 @@ elif mod == "Cog-chat":
     STATE_MOD = "cog"
     MODEL_PATH = mod_chat
     language_processor_version = "chat"
-else:
+elif mod == "moondream":
     STATE_MOD = "moon"
     MODEL_PATH = mod_moon
 

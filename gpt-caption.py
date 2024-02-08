@@ -289,7 +289,7 @@ def switch_API(api, state):
             if state != api:
                 requests.post(f"http://127.0.0.1:8000/v1/{api}")
         else:
-            API_command = f'python openai_api.py --model {api}'
+            API_command = f'python openai_api.py --mod {api}'
             subprocess.Popen(API_command,shell=True)
             while True:
                 if is_connection():
@@ -541,8 +541,8 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                             Please confirm that your GPU has sufficient graphics memory ***(approximately 14g ±)*** when using CogVLM
                         
             此为API配置页面，使用本地模型需要配置相关环境并下载模型，
-                            moondream模型**大小约为22g+**需要较长时间，请确认磁盘空间充足。显存需求约为6g，请确认自己的显卡有足够的显存。
-                            CogVLM**大小约为35g+**，需要较长时间 ***(真的很长)***。安装以及下载完成后，总占用空间约为40g+，请确认磁盘空间充足。
+                            ***moondream***模型大小约为**22g+**需要较长时间，请确认磁盘空间充足。显存需求约为6g，请确认自己的显卡有足够的显存。
+                            ***CogVLM***大小约为**35g+**，需要较长时间 **(真的很长)**。安装以及下载完成后，总占用空间约为40g+，请确认磁盘空间充足。
                             模型选择上，vqa模型效果更好但是更慢，chat模型更快但是效果略弱。使用CogVLM请确认自己的显卡有足够的显存 ***(约14g±)***
             """)
             with gr.Row():
