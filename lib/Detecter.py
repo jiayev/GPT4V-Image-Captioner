@@ -40,7 +40,7 @@ def detecter():
         installed = print_missing(install_detection(cog_requir))
 
         if installed == "":
-            return "All listed libraries are installed. / Cog安装无误"
+            return "All listed libraries are installed. / 本地模型依赖安装无误"
         else:
             return installed
     else:

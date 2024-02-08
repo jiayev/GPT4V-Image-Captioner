@@ -18,19 +18,9 @@ from lib.GPT_Prompt import get_prompts_from_csv, save_prompt, delete_prompt
 from lib.Api_Utils import run_openai_api, save_api_details, get_api_details, downloader, installer, save_state, qwen_api_switch
 from lib.Detecter import detecter
 
-
 os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
 mod_default, saved_api_key, saved_api_url = get_api_details()
 SUPPORTED_IMAGE_FORMATS = ('.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif', '.tiff', '.tif')
-
-# 启动参数
-def get_args():
-    parser = argparse.ArgumentParser(description='GPT4V-Image-Captioner启动参数')
-    parser.add_argument("--port", type=int, default="8848", help="占用端口，默认8848")
-    parser.add_argument("--listen", action='store_true', help="打开远程连接，默认关闭")
-    parser.add_argument("--share", action='store_true', help="打开gradio共享，默认关闭")
-    return parser.parse_args()
-args = get_args()
 
 # 图像打标
 should_stop = threading.Event()
@@ -543,19 +533,23 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             with gr.Row():
                 gr.Markdown("""
             ⚠ **Warning / 警告**: 
-            This is the API configuration page. To use CogVLM, you need to configure environment and download it, which is **approximately 35g+** in size and takes a long time ***(really, really long)***. 
+            This is the API configuration page. To use local model, you need to configure environment and download it.
+                            **Moondream** model **size is about 22g+**, and it takes a long time, Please confirm that the disk space is sufficient.Please confirm that your GPU has sufficient graphics memory ***(approximately 6g)*** 
+                            **CogVLM**, you need to configure environment and download it, which is **approximately 35g+** in size and takes a long time ***(really, really long)***. 
                             After installation and download, the total space occupied is about ***40g+***. Please confirm that the disk space is sufficient.
                             In addition, in terms of model selection, the vqa model performs better but slower, while the chat model is faster but slightly weaker.
                             Please confirm that your GPU has sufficient graphics memory ***(approximately 14g ±)*** when using CogVLM
                         
-            此为API配置页面，使用CogVLM需要配置相关环境并下载模型，**大小约为35g+**，需要较长时间 ***(真的很长)***。安装以及下载完成后，总占用空间约为40g+，请确认磁盘空间充足。
+            此为API配置页面，使用本地模型需要配置相关环境并下载模型，
+                            moondream模型**大小约为22g+**需要较长时间，请确认磁盘空间充足。显存需求约为6g，请确认自己的显卡有足够的显存。
+                            CogVLM**大小约为35g+**，需要较长时间 ***(真的很长)***。安装以及下载完成后，总占用空间约为40g+，请确认磁盘空间充足。
                             模型选择上，vqa模型效果更好但是更慢，chat模型更快但是效果略弱。使用CogVLM请确认自己的显卡有足够的显存 ***(约14g±)***
             """)
             with gr.Row():
                 detecter_output = gr.Textbox(label="Check Env / 环境检测", interactive=False)
                 detect_button = gr.Button("Check / 检查", variant='primary')
             with gr.Row():
-                models_select = gr.Radio(label="Choose Models / 选择模型", choices=["moondream","vqa", "chat"], value="moon")
+                models_select = gr.Radio(label="Choose Models / 选择模型", choices=["moondream","vqa", "chat"], value="moondream")
                 acceleration_select = gr.Radio(label="Choose Default Plz / 选择是否国内加速(如果使用国内加速,请关闭魔法上网)", choices=["CN", "default"],
                                                value="CN")
                 download_button = gr.Button("Download Models / 下载模型", variant='primary')
@@ -566,7 +560,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             "GPT4V",
             "qwen-vl-plus",
             "qwen-vl-max",
-            "moondrean",
+            "moondream",
             "Cog-vqa",
             "Cog-chat"
             ]
@@ -588,12 +582,21 @@ with gr.Blocks(title="GPT4V captioner") as demo:
     gr.Markdown(
         "### Developers: [Jiaye](https://civitai.com/user/jiayev1),&nbsp;&nbsp;[LEOSAM 是只兔狲](https://civitai.com/user/LEOSAM),&nbsp;&nbsp;[SleeeepyZhou](https://civitai.com/user/SleeeepyZhou),&nbsp;&nbsp;[Fok](https://civitai.com/user/fok3827)&nbsp;&nbsp;|&nbsp;&nbsp;Welcome everyone to add more new features to this project.")
 
+# 启动参数
+def get_args():
+    parser = argparse.ArgumentParser(description='GPT4V-Image-Captioner启动参数')
+    parser.add_argument("--port", type=int, default="8848", help="占用端口，默认8848")
+    parser.add_argument("--listen", action='store_true', help="打开远程连接，默认关闭")
+    parser.add_argument("--share", action='store_true', help="打开gradio共享，默认关闭")
+    return parser.parse_args()
+
+args = get_args()
+
 if __name__ == "__main__":
     threading.Thread(target=lambda: switch_API(mod_default, 'GPT')).start()
     demo.launch(
         server_name="0.0.0.0" if args.listen else None,
         server_port=args.port,
-        share=args.share, 
+        share=args.share,
         inbrowser=True
     )
-

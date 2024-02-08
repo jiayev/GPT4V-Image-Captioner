@@ -233,7 +233,8 @@ def downloader(model_type, acceleration):
         )
     else:
         snapshot_download(
-            repo_id='vikhyatk/moondream1',
+            repo_id="vikhyatk/moondream1",
+            local_dir="./models/moondream",
             max_workers=8
         )
     return f"{model_type} Model download completed. / {model_type}模型下载完成"

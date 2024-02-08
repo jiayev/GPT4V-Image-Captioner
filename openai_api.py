@@ -367,59 +367,58 @@ async def create_chat_completion(request: ChatCompletionRequest):
     return ChatCompletionResponse(model=request.model, choices=[choice_data], object="chat.completion", usage=usage)
 
 # 模型切换路由配置
-STATE_MOD = "cog"
+STATE_MOD = "moon"
+MODEL_PATH = ""
 
-# CogVLM模型切换
+# 模型加载
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-def load_cog(model_input):
+def load_mod(model_input, mod_type):
     global model, tokenizer
-    tokenizer_path = os.environ.get("TOKENIZER_PATH", 'lmsys/vicuna-7b-v1.5')
-    tokenizer = LlamaTokenizer.from_pretrained(
-        tokenizer_path,
-        trust_remote_code=True,
-        signal_type=language_processor_version
-    )
-    if 'cuda' in DEVICE:
-        model = AutoModelForCausalLM.from_pretrained(
-            model_input,
+    if mod_type == "cog":
+        tokenizer_path = os.environ.get("TOKENIZER_PATH", 'lmsys/vicuna-7b-v1.5')
+        tokenizer = LlamaTokenizer.from_pretrained(
+            tokenizer_path,
             trust_remote_code=True,
-            load_in_4bit=True,
-            torch_dtype=torch_type,
-            low_cpu_mem_usage=True
-        ).eval()
+            signal_type=language_processor_version
+        )
+        if 'cuda' in DEVICE:
+            model = AutoModelForCausalLM.from_pretrained(
+                model_input,
+                trust_remote_code=True,
+                load_in_4bit=True,
+                torch_dtype=torch_type,
+                low_cpu_mem_usage=True
+            ).eval()
+        else:
+            model = AutoModelForCausalLM.from_pretrained(
+                model_input,
+                trust_remote_code=True
+            ).float().to(DEVICE).eval()
     else:
-        model = AutoModelForCausalLM.from_pretrained(
-            model_input,
-            trust_remote_code=True
-        ).float().to(DEVICE).eval()
+        device, dtype = detect_device()
+        model = Moondream.from_pretrained(model_input).to(device=device, dtype=dtype).eval()
+        tokenizer = Tokenizer.from_pretrained(model_input)
 
 @app.post("/v1/Cog-vqa")
 async def switch_vqa():
     global model, STATE_MOD
     STATE_MOD = "cog"
     del model
-    load_cog(mod_vqa)
+    load_mod(mod_vqa)
 
 @app.post("/v1/Cog-chat")
 async def switch_chat():
     global model, STATE_MOD
     STATE_MOD = "cog"
     del model
-    load_cog(mod_chat)
+    load_mod(mod_chat)
 
-# Moondream模型切换
-def load_moon(model_input):
-    global model, tokenizer
-    device, dtype = detect_device()
-    model = Moondream.from_pretrained(model_input).to(device=device, dtype=dtype).eval()
-    tokenizer = Tokenizer.from_pretrained(model_input)
-
-@app.post("/v1/moondrean")
+@app.post("/v1/moondream")
 async def switch_moon():
     global model, STATE_MOD
-    STATE_MOD = "moondrean"
+    STATE_MOD = "moon"
     del model
-    load_moon(mod_moon)
+    load_mod(mod_moon)
 
 # 关闭
 @app.post("/v1/close")
@@ -436,7 +435,7 @@ mod = args.model
 
 mod_vqa = './models/cogagent-vqa-hf'
 mod_chat = './models/cogagent-chat-hf'
-mod_moon = 'vikhyatk/moondream1'
+mod_moon = './models/moondream'
 
 '''
 mod_list = [
@@ -447,9 +446,16 @@ mod_list = [
 '''
 
 if mod == "Cog-vqa":
+    STATE_MOD = "cog"
+    MODEL_PATH = mod_vqa
     language_processor_version = "chat_old"
 elif mod == "Cog-chat":
+    STATE_MOD = "cog"
+    MODEL_PATH = mod_chat
     language_processor_version = "chat"
+else:
+    STATE_MOD = "moon"
+    MODEL_PATH = mod_moon
 
 if __name__ == "__main__":
     if torch.cuda.is_available() and torch.cuda.get_device_capability()[0] >= 8:
@@ -459,13 +465,6 @@ if __name__ == "__main__":
 
     print("========Use torch type as:{} with device:{}========\n\n".format(torch_type, DEVICE))
 
-    if mod == "Cog-vqa":
-        language_processor_version = "chat_old"
-        load_cog(mod_vqa)
-    elif mod == "Cog-chat":
-        language_processor_version = "chat"
-        load_cog(mod_chat)
-    else:
-        load_moon(mod_moon)
+    load_mod(MODEL_PATH, STATE_MOD)
 
     uvicorn.run(app, host='0.0.0.0', port=8000, workers=1)
