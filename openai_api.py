@@ -11,7 +11,6 @@ TextIteratorStreamer, CodeGenTokenizerFast as Tokenizer
 
 from contextlib import asynccontextmanager
 from loguru import logger
-from sse_starlette.sse import EventSourceResponse
 from typing import List, Literal, Union, Tuple, Optional
 
 from fastapi import FastAPI, HTTPException

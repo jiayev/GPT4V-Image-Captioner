@@ -528,7 +528,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
 
     # API Config
     with gr.Tab("API Config / API配置"):
-        # CogVLM一键
+        # 本地模型配置
         with gr.Accordion("Local Model / 使用本地模型", open=True):
             with gr.Row():
                 gr.Markdown("""
