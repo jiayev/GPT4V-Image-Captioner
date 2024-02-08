@@ -153,16 +153,17 @@ def generate_stream_moondream(params: dict):
 
     messages = params["messages"]
     prompt, formatted_history, image_list = process_history_and_images(messages)
+    history = chat_history_to_prompt(formatted_history)
     # 只处理最后一张图
     img = image_list[-1]
 
     # 构建输入
     '''
     answer_question(
+            self,
             image_embeds,
             question,
             tokenizer,
-            max_new_tokens,
             chat_history="",
             result_queue=None,
             **kwargs,
@@ -174,6 +175,9 @@ def generate_stream_moondream(params: dict):
             "image_embeds": image_embeds,
             "question": prompt,
             "tokenizer": tokenizer,
+            "chat_history": history,
+            "result_queue": None,
+            "streamer": streamer,
         }
 
     thread = Thread(
