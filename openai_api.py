@@ -389,18 +389,20 @@ def load_mod(model_input, mod_type):
 
 @app.post("/v1/Cog-vqa")
 async def switch_vqa():
-    global model, STATE_MOD, mod_vqa
+    global model, STATE_MOD, mod_vqa, language_processor_version
     STATE_MOD = "cog"
     del model
     model = None
+    language_processor_version = "chat_old"
     load_mod(mod_vqa, STATE_MOD)
 
 @app.post("/v1/Cog-chat")
 async def switch_chat():
-    global model, STATE_MOD, mod_chat
+    global model, STATE_MOD, mod_chat, language_processor_version
     STATE_MOD = "cog"
     del model
     model = None
+    language_processor_version = "chat"
     load_mod(mod_chat, STATE_MOD)
 
 @app.post("/v1/moondream")
