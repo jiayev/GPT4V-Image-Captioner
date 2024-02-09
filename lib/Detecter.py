@@ -6,6 +6,8 @@ def check_memory():
     for gpu in gpus:
         if gpu.memoryTotal > 12000:
             return ""
+        elif gpu.memoryTotal > 6000:
+            return "Only MoonDream can be used. / 仅可使用MoonDream"
     return "Insufficient GPU graphics memory for use. / 显存过小"
 
 def install_detection(requir_path):
@@ -35,16 +37,14 @@ def print_missing(missing_libs):
 
 def detecter():
     gpu_check = check_memory()
-    if gpu_check == "":
-        cog_requir = "./install_script/check.txt"
-        installed = print_missing(install_detection(cog_requir))
+    cog_requir = "./install_script/check.txt"
+    installed = print_missing(install_detection(cog_requir))
 
-        if installed == "":
-            return "All listed libraries are installed. / 本地模型依赖安装无误"
-        else:
-            return installed
+    if installed == "":
+        return gpu_check + "All listed libraries are installed. / 本地模型依赖安装无误"
     else:
-        return gpu_check
+        return gpu_check + installed
+
 
 def is_installed(package):
     try:
