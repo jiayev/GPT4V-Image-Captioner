@@ -579,8 +579,10 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                             outputs=[api_key_input, api_url_input, timeout_input, A_state])
         set_default.click(save_state, inputs=[switch_select, api_key_input, api_url_input], outputs=A_state)
 
-    gr.Markdown(
-        "### Developers: [Jiaye](https://civitai.com/user/jiayev1),&nbsp;&nbsp;[LEOSAM 是只兔狲](https://civitai.com/user/LEOSAM),&nbsp;&nbsp;[SleeeepyZhou](https://civitai.com/user/SleeeepyZhou),&nbsp;&nbsp;[Fok](https://civitai.com/user/fok3827)&nbsp;&nbsp;|&nbsp;&nbsp;Welcome everyone to add more new features to this project.")
+    
+    gr.Markdown("""
+        ### Developers: [Jiaye](https://civitai.com/user/jiayev1),&nbsp;&nbsp;[LEOSAM 是只兔狲](https://civitai.com/user/LEOSAM),&nbsp;&nbsp;[SleeeepyZhou](https://civitai.com/user/SleeeepyZhou),&nbsp;&nbsp;[Fok](https://civitai.com/user/fok3827),&nbsp;&nbsp;[gluttony-10](https://github.com/gluttony-10),&nbsp;&nbsp;[327](https://github.com/327),&nbsp;&nbsp;[十字鱼](https://space.bilibili.com/893892)&nbsp;&nbsp;|&nbsp;&nbsp;Welcome everyone to add more new features to this project.
+                """)
 
 # 启动参数
 def get_args():
