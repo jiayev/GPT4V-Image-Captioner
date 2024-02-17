@@ -1,8 +1,8 @@
-scipy
+scipy==1.12.0
 networkx
 wordcloud
 matplotlib
-Pillow
+Pillow==10.2.0
 tqdm
 gradio
 requests
