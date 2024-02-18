@@ -425,11 +425,12 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             with gr.Row():
                 detect_stop_button = gr.Button("Stop Batch Processing / 停止批量处理")
                 detect_stop_button.click(stop_batch_processing, inputs=[], outputs=detect_batch_output)
-        with gr.Tab("WD1.4 Tag Polishing / WD1.4 标签润色"):
+        with gr.Tab("Tag Polishing / 标签润色"):
             gr.Markdown("""
-                    使用WD1.4对图片进行打标后，在上方prompt中使用“Describe this image in a very detailed manner and refer these prompt tags:{大括号里替换为放置额外tags文件的目录，会自动读取和图片同名txt。比如 D:\ abc\}”\n
-                    After marking the image using WD1.4, enter the prompt in the “” marks in the prompt box above.
-                        “Replace this with the directory where additional tags files are placed, which will automatically read the txt file with the same name as the image. For example, D: \ abc\}”
+                    使用其他打标器(如WD1.4)对图片进行打标后，在上方prompt中使用“Describe this image in a very detailed manner and refer these prompt tags:{大括号里替换为放置额外tags文件的目录，会自动读取和图片同名txt。比如 D:\ abc\}”\n
+                    After marking the image using other captioner(such as WD1.4), enter the prompt in the “” marks in the prompt box.
+                        “Describe this image in a very detailed manner and refer these prompt tags:
+                        {This is the txt file path for captions, will automatically read the txt file with the same name as the image. For example, D: \ abc\}”
                     """)
         with gr.Tab("Image filtering / 图片筛选"):
             gr.Markdown("""
