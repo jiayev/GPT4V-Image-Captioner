@@ -7,7 +7,7 @@ streamlit>=1.29.0
 timm>=0.9.12
 accelerate>=0.25.0
 pydantic>=2.5.2
-xformers==0.0.23
+xformers==0.0.23.post1 
 
 requests
 openai>=1.4.0
