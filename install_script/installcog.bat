@@ -33,8 +33,8 @@ if %errorlevel% equ 0 (
 ) else (
     echo Use default
     echo Installing deps...
-    pip install torch==2.2.0+cu121 --extra-index-url https://download.pytorch.org/whl/cu121/torch-2.2.0%2Bcu121-cp310-cp310-win_amd64.whl
-    pip install bitsandbytes==0.41.2.post2 --extra-index-url https://github.com/jllllll/bitsandbytes-windows-webui/releases/download/wheels/bitsandbytes-0.41.2.post2-py3-none-win_amd64.whl
+    pip install https://download.pytorch.org/whl/cu121/torch-2.2.0%2Bcu121-cp310-cp310-win_amd64.whl
+    pip install https://github.com/jllllll/bitsandbytes-windows-webui/releases/download/wheels/bitsandbytes-0.41.2.post2-py3-none-win_amd64.whl
 )
 
 
