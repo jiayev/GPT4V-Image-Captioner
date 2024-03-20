@@ -22,19 +22,11 @@ if %errorlevel% equ 0 (
         pause >nul
         exit /b 1
     )
-    echo 安装 bitsandbytes...
-    pip install bitsandbytes==0.41.1 --index-url https://jihulab.com/api/v4/projects/140618/packages/pypi/simple
-    if %ERRORLEVEL% neq 0 (
-        echo bitsandbytes 安装失败 > install_temp.txt
-        pause >nul
-        exit /b 1
-    )
 
 ) else (
     echo Use default
     echo Installing deps...
     pip install https://download.pytorch.org/whl/cu121/torch-2.2.0%2Bcu121-cp310-cp310-win_amd64.whl
-    pip install https://github.com/jllllll/bitsandbytes-windows-webui/releases/download/wheels/bitsandbytes-0.41.2.post2-py3-none-win_amd64.whl
 )
 
 

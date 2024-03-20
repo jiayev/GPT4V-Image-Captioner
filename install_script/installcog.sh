@@ -23,18 +23,10 @@ if [ $? -eq 0 ]; then
         exit 1
     fi
 
-    echo "安装 bitsandbytes..."
-    pip install bitsandbytes==0.41.1 --index-url https://jihulab.com/api/v4/projects/140618/packages/pypi/simple
-    if [ $? -ne 0 ]; then
-        echo "bitsandbytes 安装失败" > install_temp.txt
-        exit 1
-    fi
-
 else
     echo "Use default"
     echo "Installing deps..."
     pip install torch==2.1.2+cu121 torchvision==0.16.2+cu121 --extra-index-url https://download.pytorch.org/whl/cu121
-    pip install bitsandbytes==0.41.1
 fi
 
 pip install deepspeed
