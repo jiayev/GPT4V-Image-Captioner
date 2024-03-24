@@ -21,6 +21,8 @@ def install_detection(requir_path):
         try:
             importlib.import_module(check_libs)
         except ImportError:
+            if check_libs == "PIL": #switch back
+                check_libs = "Pillow"
             missing_libs.append(check_libs)
 
     return missing_libs
