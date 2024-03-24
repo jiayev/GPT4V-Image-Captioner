@@ -23,11 +23,8 @@ pip install --upgrade pip
 # Install necessary Python libraries
 pip install -r ./install_script/requirements.txt
 
-# Run Python script (script name is gpt-caption.py)
-python3 gpt-caption.py
-if [ $? -ne 0 ]; then
-    echo "The script failed to run."
-    exit 1
-fi
-
-echo "Script finished running."
+echo "Install completed, please run Start to open the GUI"
+echo "安装完毕，请运行Start打开GUI"
+echo ""
+read -p "press any key to continue...
+按任意键继续..."
