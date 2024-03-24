@@ -13,10 +13,10 @@ if %errorlevel% equ 0 (
     echo 安装依赖
     set PIP_DISABLE_PIP_VERSION_CHECK=1
     set PIP_NO_CACHE_DIR=1
-    set PIP_INDEX_URL=https://mirror.baidu.com/pypi/simple
+    set PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 
     echo 安装 torch...
-    pip install torch==2.2.0+cu121 torchvision==0.17.0+cu121 -f https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html -i https://mirror.baidu.com/pypi/simple
+    pip install torch==2.2.0+cu121 torchvision==0.17.0+cu121 -f https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html -i https://pypi.tuna.tsinghua.edu.cn/simple
     if %ERRORLEVEL% neq 0 (
         echo torch 安装失败 > install_temp.txt
         pause >nul
