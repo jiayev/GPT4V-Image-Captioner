@@ -16,7 +16,7 @@ if %errorlevel% equ 0 (
     set PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 
     echo 安装 torch...
-    pip install torch==2.2.0+cu121 torchvision==0.17.0+cu121 -f https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html -i https://pypi.tuna.tsinghua.edu.cn/simple
+    pip install torch==2.2.1+cu121 torchvision==0.17.1+cu121 -f https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html -i https://pypi.tuna.tsinghua.edu.cn/simple
     if %ERRORLEVEL% neq 0 (
         echo torch 安装失败 > install_temp.txt
         pause >nul
@@ -31,7 +31,7 @@ if %errorlevel% equ 0 (
 
 
 pip install ./install_script/deepspeed-0.11.2+8ce7471-py3-none-any.whl
-pip install -U -I --no-deps xformers==0.0.24
+pip install -U -I --no-deps xformers==0.0.25
 pip install -r ./install_script/require.txt
 if %ERRORLEVEL% neq 0 (
     echo Deps install failed / 依赖安装失败 > install_temp.txt
