@@ -14,10 +14,10 @@ if [ $? -eq 0 ]; then
 
     export PIP_DISABLE_PIP_VERSION_CHECK=1
     export PIP_NO_CACHE_DIR=1
-    export PIP_INDEX_URL=https://mirror.baidu.com/pypi/simple
+    export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 
     echo "安装 torch..."
-    pip install torch==2.2.1+cu121 torchvision==0.17.1+cu121 -f https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html -i https://mirror.baidu.com/pypi/simple
+    pip install torch==2.2.1+cu121 torchvision==0.17.1+cu121 -f https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html -i https://pypi.tuna.tsinghua.edu.cn/simple
     if [ $? -ne 0 ]; then
         echo "torch 安装失败" > install_temp.txt
         exit 1
