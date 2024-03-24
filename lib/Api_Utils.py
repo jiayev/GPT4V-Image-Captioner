@@ -240,11 +240,10 @@ def downloader(model_type, acceleration):
     return f"{model_type} Model download completed. / {model_type}模型下载完成"
 
 def installer():
-    script_path = '.\install_script\installcog'
     if platform.system() == "Windows":
-        install_command = f'{script_path}.bat'
+        install_command = f'.\install_script\installcog.bat'
     else:
-        install_command = f'{script_path}.sh'
+        install_command = f'./install_script/installcog.sh'
     subprocess.Popen(install_command, shell=True)
 
     while not os.path.exists('install_temp.txt'):
