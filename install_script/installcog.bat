@@ -26,7 +26,7 @@ if %errorlevel% equ 0 (
 ) else (
     echo Use default
     echo Installing deps...
-    pip install torch==2.2.1+cu121 torchvision==0.17.1+cu121 https://download.pytorch.org/whl/cu121
+    pip install torch==2.2.1+cu121 torchvision==0.17.1+cu121 -i https://download.pytorch.org/whl/cu121
 )
 
 
