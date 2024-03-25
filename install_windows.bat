@@ -64,7 +64,9 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 
+echo.
 echo Install completed, please run Start to open the GUI
 echo 安装完毕，请运行Start打开GUI
+echo.
 
 pause
