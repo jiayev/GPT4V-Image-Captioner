@@ -10,16 +10,16 @@ ping -c 1 -W $timeout $target_url > /dev/null
 
 if [ $? -eq 0 ]; then
     echo "Use CN"
-    echo "°²×°ÒÀÀµ"
+    echo "å®‰è£…ä¾èµ–"
 
     export PIP_DISABLE_PIP_VERSION_CHECK=1
     export PIP_NO_CACHE_DIR=1
     export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 
-    echo "°²×° torch..."
+    echo "å®‰è£… torch..."
     pip install torch==2.2.1+cu121 torchvision==0.17.1+cu121 -f https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html -i https://pypi.tuna.tsinghua.edu.cn/simple
     if [ $? -ne 0 ]; then
-        echo "torch °²×°Ê§°Ü" > install_temp.txt
+        echo "torch å®‰è£…å¤±è´¥" > install_temp.txt
         exit 1
     fi
 
@@ -33,11 +33,11 @@ pip install deepspeed
 pip install -U -I --no-deps xformers==0.0.25
 pip install -r ./install_script/require.txt
 if [ $? -ne 0 ]; then
-    echo "Deps install failed / ÒÀÀµ°²×°Ê§°Ü" > install_temp.txt
+    echo "Deps install failed / ä¾èµ–å®‰è£…å¤±è´¥" > install_temp.txt
     exit 1
 fi
 
-echo "Install completed / °²×°Íê±Ï" > install_temp.txt
+echo "Install completed / å®‰è£…å®Œæ¯•" > install_temp.txt
 
 read -p "Press Enter to continue..."
 
