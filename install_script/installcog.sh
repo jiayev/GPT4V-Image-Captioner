@@ -4,11 +4,11 @@ source myenv/bin/activate
 
 export HF_HOME="huggingface"
 
-target_url="www.baidu.com"
+target_url="www.google.com"
 timeout=4000
-ping -c 1 -W $timeout $target_url > /dev/null
+ping -c 1 -W $timeout $target_url -w 4 > /dev/null
 
-if [ $? -eq 0 ]; then
+if [ $? -ne 0 ]; then
     echo "Use CN"
     echo "安装依赖"
 
