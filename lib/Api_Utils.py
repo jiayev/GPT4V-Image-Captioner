@@ -244,6 +244,8 @@ def installer():
         install_command = f'.\install_script\installcog.bat'
     else:
         install_command = f'./install_script/installcog.sh'
+        subprocess.Popen(f'chmod +x {install_command}', shell=True)
+        subprocess.Popen('', shell=True) #Use an empty subprocess to refresh permission. If deleted, installcog.sh wouldn't launch properly, with Permission denied error
     subprocess.Popen(install_command, shell=True)
 
     while not os.path.exists('install_temp.txt'):
