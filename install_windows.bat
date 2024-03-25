@@ -35,12 +35,12 @@ if not exist "myenv" (
 call myenv\Scripts\activate
 
 
-REM 通过百度检测网络设置使用镜像
-set "target_url=www.baidu.com"
+REM 通过谷歌检测网络设置使用镜像
+set "target_url=www.google.com"
 set "timeout=3000"
 
 ping %target_url% -n 1 -w %timeout% >nul
-if %errorlevel% equ 0 (
+if %errorlevel% equ 1 (
     echo Use CN
     set PIP_DISABLE_PIP_VERSION_CHECK=1
     set PIP_NO_CACHE_DIR=1
