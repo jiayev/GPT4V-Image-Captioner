@@ -218,6 +218,12 @@ def get_api_details():
 # 本地模型相关
 def downloader(model_type, acceleration):
     endpoint = 'https://hf-mirror.com' if acceleration == 'CN' else None
+    if model_type == 'vqa' or model_type == 'chat':
+        snapshot_download(
+            repo_id="lmsys/vicuna-7b-v1.5",
+            allow_patterns=["tokenizer*","special_tokens_map.json"],
+            endpoint=endpoint
+        )
     if model_type == 'vqa':
         snapshot_download(
             repo_id="THUDM/cogagent-vqa-hf",
