@@ -41,5 +41,3 @@ if %ERRORLEVEL% neq 0 (
 )
 
 echo Install completed / °²×°Íê±Ï > install_temp.txt
-
-pause

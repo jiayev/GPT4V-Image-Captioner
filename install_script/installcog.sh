@@ -38,6 +38,3 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "Install completed / 安装完毕" > install_temp.txt
-
-read -p "Press Enter to continue..."
-
