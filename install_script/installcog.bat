@@ -8,7 +8,7 @@ set "target_url=www.google.com"
 set "timeout=4000"
 
 ping %target_url% -n 1 -w %timeout% >nul
-if %errorlevel% equ 1 (
+if %ERRORLEVEL% neq 0 (
     echo Use CN
     echo °²×°ÒÀÀµ
     set PIP_DISABLE_PIP_VERSION_CHECK=1

@@ -602,5 +602,5 @@ if __name__ == "__main__":
         server_name="0.0.0.0" if args.listen else None,
         server_port=args.port,
         share=args.share,
-        inbrowser=False if args.no_browser else True,
+        inbrowser=False if args.no_browser else True
     )
