@@ -12,10 +12,18 @@ def install_detection(requir_path):
     # 查
     missing_libs = []
     for libs in requirements:
+        if libs.find("==") == -1: #only fix requirements which contain "==", because I don't know how to take "<=",">="... into account at the same time.
+            check_libs = libs
+        else:
+            check_libs = libs[:libs.index("==")]
+        if check_libs == "Pillow": #import PIL instead of import Pillow
+            check_libs = "PIL"
         try:
-            importlib.import_module(libs)
+            importlib.import_module(check_libs)
         except ImportError:
-            missing_libs.append(libs)
+            if check_libs == "PIL": #switch back
+                check_libs = "Pillow"
+            missing_libs.append(check_libs)
 
     return missing_libs
 

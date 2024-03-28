@@ -4,47 +4,37 @@ source myenv/bin/activate
 
 export HF_HOME="huggingface"
 
-target_url="www.baidu.com"
+target_url="www.google.com"
 timeout=4000
-ping -c 1 -W $timeout $target_url > /dev/null
+ping -c 1 -W $timeout $target_url -w 4 > /dev/null
 
-if [ $? -eq 0 ]; then
+if [ $? -ne 0 ]; then
     echo "Use CN"
-    echo "°²×°ÒÀÀµ"
+    echo "å®‰è£…ä¾èµ–"
 
     export PIP_DISABLE_PIP_VERSION_CHECK=1
     export PIP_NO_CACHE_DIR=1
-    export PIP_INDEX_URL=https://mirror.baidu.com/pypi/simple
+    export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 
-    echo "°²×° torch..."
-    pip install torch==2.1.2+cu121 torchvision==0.16.2+cu121 -f https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html -i https://mirror.baidu.com/pypi/simple
+    echo "å®‰è£… torch..."
+    pip install torch==2.2.1+cu121 torchvision==0.17.1+cu121 -f https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html -i https://pypi.tuna.tsinghua.edu.cn/simple
     if [ $? -ne 0 ]; then
-        echo "torch °²×°Ê§°Ü" > install_temp.txt
-        exit 1
-    fi
-
-    echo "°²×° bitsandbytes..."
-    pip install bitsandbytes==0.41.1 --index-url https://jihulab.com/api/v4/projects/140618/packages/pypi/simple
-    if [ $? -ne 0 ]; then
-        echo "bitsandbytes °²×°Ê§°Ü" > install_temp.txt
+        echo "torch å®‰è£…å¤±è´¥" > install_temp.txt
         exit 1
     fi
 
 else
     echo "Use default"
     echo "Installing deps..."
-    pip install torch==2.1.2+cu121 torchvision==0.16.2+cu121 --extra-index-url https://download.pytorch.org/whl/cu121
-    pip install bitsandbytes==0.41.1
+    pip install torch==2.2.1+cu121 torchvision==0.17.1+cu121 --extra-index-url https://download.pytorch.org/whl/cu121
 fi
 
 pip install deepspeed
+pip install -U -I --no-deps xformers==0.0.25
 pip install -r ./install_script/require.txt
 if [ $? -ne 0 ]; then
-    echo "Deps install failed / ÒÀÀµ°²×°Ê§°Ü" > install_temp.txt
+    echo "Deps install failed / ä¾èµ–å®‰è£…å¤±è´¥" > install_temp.txt
     exit 1
 fi
 
-echo "Install completed / °²×°Íê±Ï" > install_temp.txt
-
-read -p "Press Enter to continue..."
-
+echo "Install completed / å®‰è£…å®Œæ¯•" > install_temp.txt

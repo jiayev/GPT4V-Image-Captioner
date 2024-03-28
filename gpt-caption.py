@@ -591,6 +591,7 @@ def get_args():
     parser.add_argument("--port", type=int, default="8848", help="占用端口，默认8848")
     parser.add_argument("--listen", action='store_true', help="打开远程连接，默认关闭")
     parser.add_argument("--share", action='store_true', help="打开gradio共享，默认关闭")
+    parser.add_argument("--no-browser", action='store_true', help="不要自动打开浏览器，默认关闭")
     return parser.parse_args()
 
 args = get_args()
@@ -601,5 +602,5 @@ if __name__ == "__main__":
         server_name="0.0.0.0" if args.listen else None,
         server_port=args.port,
         share=args.share,
-        inbrowser=True
+        inbrowser=False if args.no_browser else True
     )

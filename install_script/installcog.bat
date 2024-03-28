@@ -3,50 +3,41 @@
 call myenv\Scripts\activate
 
 set HF_HOME=huggingface
-REM é€šè¿‡ç™¾åº¦æ£€æµ‹ç½‘ç»œè®¾ç½®ä½¿ç”¨é•œåƒ
-set "target_url=www.baidu.com"
+REM Í¨¹ý°Ù¶È¼ì²âÍøÂçÉèÖÃÊ¹ÓÃ¾µÏñ
+set "target_url=www.google.com"
 set "timeout=4000"
 
 ping %target_url% -n 1 -w %timeout% >nul
-if %errorlevel% equ 0 (
+if %ERRORLEVEL% neq 0 (
     echo Use CN
-    echo å®‰è£…ä¾èµ–
+    echo °²×°ÒÀÀµ
     set PIP_DISABLE_PIP_VERSION_CHECK=1
     set PIP_NO_CACHE_DIR=1
-    set PIP_INDEX_URL=https://mirror.baidu.com/pypi/simple
+    set PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 
-    echo å®‰è£… torch...
-    pip install torch==2.2.0+cu121 torchvision==0.17.0+cu121 -f https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html -i https://mirror.baidu.com/pypi/simple
-    if %ERRORLEVEL% neq 0 (
-        echo torch å®‰è£…å¤±è´¥ > install_temp.txt
-        pause >nul
-        exit /b 1
-    )
-    echo å®‰è£… bitsandbytes...
-    pip install bitsandbytes==0.41.1 --index-url https://jihulab.com/api/v4/projects/140618/packages/pypi/simple
-    if %ERRORLEVEL% neq 0 (
-        echo bitsandbytes å®‰è£…å¤±è´¥ > install_temp.txt
-        pause >nul
-        exit /b 1
-    )
+    echo °²×° torch...
+    pip install torch==2.2.1+cu121 torchvision==0.17.1+cu121 -f https://mirror.sjtu.edu.cn/pytorch-wheels/torch_stable.html -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 ) else (
     echo Use default
     echo Installing deps...
-    pip install https://download.pytorch.org/whl/cu121/torch-2.2.0%2Bcu121-cp310-cp310-win_amd64.whl
-    pip install https://github.com/jllllll/bitsandbytes-windows-webui/releases/download/wheels/bitsandbytes-0.41.2.post2-py3-none-win_amd64.whl
+    pip install torch==2.2.1+cu121 torchvision==0.17.1+cu121 -i https://download.pytorch.org/whl/cu121
 )
 
-
-pip install ./install_script/deepspeed-0.11.2+8ce7471-py3-none-any.whl
-pip install -U -I --no-deps xformers==0.0.24
-pip install -r ./install_script/require.txt
 if %ERRORLEVEL% neq 0 (
-    echo Deps install failed / ä¾èµ–å®‰è£…å¤±è´¥ > install_temp.txt
+    echo torch install failed / torch °²×°Ê§°Ü > install_temp.txt
     pause >nul
     exit /b 1
 )
 
-echo Install completed / å®‰è£…å®Œæ¯• > install_temp.txt
 
-pause
+pip install ./install_script/deepspeed-0.11.2+8ce7471-py3-none-any.whl
+pip install -U -I --no-deps xformers==0.0.25
+pip install -r ./install_script/require.txt
+if %ERRORLEVEL% neq 0 (
+    echo Deps install failed / ÒÀÀµ°²×°Ê§°Ü > install_temp.txt
+    pause >nul
+    exit /b 1
+)
+
+echo Install completed / °²×°Íê±Ï > install_temp.txt

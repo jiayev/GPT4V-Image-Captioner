@@ -16,3 +16,4 @@ uvicorn~=0.24.0
 einops==0.7.0
 protobuf==4.25.2
 sentencepiece==0.1.99
+bitsandbytes==0.43.0
