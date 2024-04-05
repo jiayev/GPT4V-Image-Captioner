@@ -79,7 +79,7 @@ def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode
         except Exception as e:
             return filename, f"An unexpected error occurred while moving {filename} or {caption_filename}: {e}"
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         futures = {}
         for filename in image_files:
             future = executor.submit(process_image, filename, file_handling_mode)
