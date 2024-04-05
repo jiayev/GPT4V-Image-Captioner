@@ -277,7 +277,7 @@ def switch_API(api, state):
             requests.post(f"http://127.0.0.1:8000/v1/close")
         key = saved_api_key
         url = saved_api_url
-        time_out = 10
+        time_out = 100
         if api[:4] == "qwen" and url.endswith("/v1/services/aigc/multimodal-generation/generation"):
             mod = qwen_api_switch(api)
         else:
