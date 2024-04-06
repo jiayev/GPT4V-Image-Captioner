@@ -41,7 +41,17 @@ def move_related_images(file_dir, text_file, target_folder):
         image_file = base_name + ext
         image_path = os.path.join(file_dir, image_file)
         if os.path.exists(image_path):
-            shutil.move(image_path, os.path.join(target_folder, image_file))
+            # Check if the image already exists in the target folder
+            target_image_path = os.path.join(target_folder, image_file)
+            file_counter = 1
+            # Find a unique file name in the target folder
+            while os.path.exists(target_image_path):
+                # Generate a new file name with a counter
+                new_base_name = f"{base_name}_{file_counter}"
+                target_image_path = os.path.join(target_folder, new_base_name + ext)
+                file_counter += 1
+            # Move the image file to the target folder with the new unique name
+            shutil.move(image_path, target_image_path)
             moved_images_count += 1  # Increment the count for each moved image
 
 def main(image_path, keywords):
