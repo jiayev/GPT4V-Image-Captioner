@@ -284,7 +284,7 @@ def switch_API(api, state):
             mod = 'GPT4V'
         s_state = mod
 
-    elif api[:3] == 'Cog' or api[:4] == "moon":
+    elif api[:3] == 'Cog' or api[:4] == "moon" or api[:4] == "Omni":
         if is_connection():
             if state != api:
                 requests.post(f"http://127.0.0.1:8000/v1/{api}")
@@ -547,7 +547,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                 detecter_output = gr.Textbox(label="Check Env / 环境检测", interactive=False)
                 detect_button = gr.Button("Check / 检查", variant='primary')
             with gr.Row():
-                models_select = gr.Radio(label="Choose Models / 选择模型", choices=["moondream","vqa", "chat"], value="moondream")
+                models_select = gr.Radio(label="Choose Models / 选择模型", choices=["moondream","vqa", "chat", "omni"], value="moondream")
                 acceleration_select = gr.Radio(label="Choose Default Plz / 选择是否国内加速(如果使用国内加速,请关闭魔法上网)", choices=["CN", "default"],
                                                value="CN")
                 download_button = gr.Button("Download Models / 下载模型", variant='primary')
@@ -560,7 +560,8 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             "qwen-vl-max",
             "moondream",
             "Cog-vqa",
-            "Cog-chat"
+            "Cog-chat",
+            "OmniLMM"
             ]
         with gr.Row():
             switch_select = gr.Dropdown(label="Choose API / 选择API", choices=mod_list, value="GPT4V")

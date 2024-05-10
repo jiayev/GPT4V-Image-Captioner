@@ -1,4 +1,6 @@
 import gc
+import io
+import json
 import time
 import requests
 import base64
@@ -8,6 +10,12 @@ import argparse
 import torch
 from transformers import AutoModelForCausalLM, LlamaTokenizer, PreTrainedModel, PreTrainedTokenizer, \
 TextIteratorStreamer, CodeGenTokenizerFast as Tokenizer
+from transformers import AutoModel, AutoTokenizer
+
+from omnilmm.utils import disable_torch_init
+from omnilmm.model.omnilmm import OmniLMMForCausalLM
+from omnilmm.model.utils import build_transform
+from omnilmm.train.train_utils import omni_preprocess
 
 from contextlib import asynccontextmanager
 from loguru import logger
@@ -137,6 +145,120 @@ def process_history_and_images(messages: List[ChatMessageInput]) -> Tuple[
             assert False, f"unrecognized role: {role}"
 
     return last_user_query, formatted_history, image_list
+
+DEFAULT_IMAGE_TOKEN = "<image>"
+DEFAULT_IMAGE_PATCH_TOKEN = "<im_patch>"
+DEFAULT_IM_START_TOKEN = "<im_start>"
+DEFAULT_IM_END_TOKEN = "<im_end>"
+
+def init_omni_lmm(model_path):
+    torch.backends.cuda.matmul.allow_tf32 = True
+    disable_torch_init()
+    model_name = os.path.expanduser(model_path)
+    print(f'Load omni_lmm model and tokenizer from {model_name}')
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_name, model_max_length=2048)
+
+    if False:
+        # model on multiple devices for small size gpu memory (Nvidia 3090 24G x2) 
+        with init_empty_weights():
+            model = OmniLMMForCausalLM.from_pretrained(model_name, tune_clip=True, torch_dtype=torch.bfloat16)
+        model = load_checkpoint_and_dispatch(model, model_name, dtype=torch.bfloat16, 
+                    device_map="auto",  no_split_module_classes=['Eva','MistralDecoderLayer', 'ModuleList', 'Resampler']
+        )
+    else:
+        model = OmniLMMForCausalLM.from_pretrained(
+            model_name, tune_clip=True, torch_dtype=torch.bfloat16
+        ).to(device='cuda', dtype=torch.bfloat16)
+
+    image_processor = build_transform(
+        is_train=False, input_size=model.model.config.image_size, std_mode='OPENAI_CLIP')
+
+    mm_use_im_start_end = getattr(model.config, "mm_use_im_start_end", False)
+    assert mm_use_im_start_end
+
+    tokenizer.add_tokens([DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_START_TOKEN,
+                         DEFAULT_IM_END_TOKEN], special_tokens=True)
+
+
+    vision_config = model.model.vision_config
+    vision_config.im_patch_token = tokenizer.convert_tokens_to_ids(
+        [DEFAULT_IMAGE_PATCH_TOKEN])[0]
+    vision_config.use_im_start_end = mm_use_im_start_end
+    vision_config.im_start_token, vision_config.im_end_token = tokenizer.convert_tokens_to_ids(
+        [DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN])
+    image_token_len = model.model.config.num_query
+
+    return model, image_processor, image_token_len, tokenizer
+
+def expand_question_into_multimodal(question_text, image_token_len, im_st_token, im_ed_token, im_patch_token):
+    if '<image>' in question_text[0]['content']:
+        question_text[0]['content'] = question_text[0]['content'].replace(
+            '<image>', im_st_token + im_patch_token * image_token_len + im_ed_token)
+    else:
+        question_text[0]['content'] = im_st_token + im_patch_token * \
+            image_token_len + im_ed_token + '\n' + question_text[0]['content']
+    return question_text
+
+def wrap_question_for_omni_lmm(question, image_token_len, tokenizer):
+    question = expand_question_into_multimodal(
+        question, image_token_len, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN, DEFAULT_IMAGE_PATCH_TOKEN)
+
+    conversation = question
+    data_dict = omni_preprocess(sources=[conversation],
+                                  tokenizer=tokenizer,
+                                  generation=True)
+
+    data_dict = dict(input_ids=data_dict["input_ids"][0],
+                     labels=data_dict["labels"][0])
+    return data_dict
+
+class OmniLMM12B:
+    def __init__(self, model_path) -> None:
+        model, img_processor, image_token_len, tokenizer = init_omni_lmm(model_path)
+        self.model = model
+        self.image_token_len = image_token_len
+        self.image_transform = img_processor
+        self.tokenizer = tokenizer
+        self.model.eval()
+
+    def decode(self, image, input_ids):
+        with torch.inference_mode():
+            output = self.model.generate_vllm(
+                input_ids=input_ids.unsqueeze(0).cuda(),
+                images=image.unsqueeze(0).half().cuda(),
+                temperature=0.6,
+                max_new_tokens=1024,
+                # num_beams=num_beams,
+                do_sample=True,
+                output_scores=True,
+                return_dict_in_generate=True,
+                repetition_penalty=1.1,
+                top_k=30,
+                top_p=0.9,
+            )
+
+            response = self.tokenizer.decode(
+                output.sequences[0], skip_special_tokens=True)
+            response = response.strip()
+            return response
+
+    def chat(self, input):
+        try:
+            image = Image.open(io.BytesIO(base64.b64decode(input['image']))).convert('RGB')
+        except Exception as e:
+            return f"Image decode error, {e}"
+
+        msgs = json.loads(input['question'])
+        input_ids = wrap_question_for_omni_lmm(
+            msgs, self.image_token_len, self.tokenizer)['input_ids']
+        input_ids = torch.as_tensor(input_ids)
+        #print('input_ids', input_ids)
+        image = self.image_transform(image)
+
+        out = self.decode(image, input_ids)
+
+        return out
 
 @torch.inference_mode()
 # Moondrean推理
@@ -288,6 +410,25 @@ def generate_cogvlm(model: PreTrainedModel, tokenizer: PreTrainedTokenizer, para
         pass
     return response
 
+@torch.inference_mode()
+# OmniLMM单次响应
+def generate_omni(model: PreTrainedModel, tokenizer: PreTrainedTokenizer, params: dict):
+    messages = params["messages"]
+    query, history, image_list = process_history_and_images(messages)
+    msgs = history
+    msgs.append({'role': 'user', 'content': query})
+    image = image_list[-1]
+    # image is a PIL image
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG")  # You can adjust the format as needed
+    buffer.seek(0)
+    image_base64 = base64.b64encode(buffer.read())
+    image_base64_str = image_base64.decode("utf-8")
+    input = {'image': image_base64_str, 'question': json.dumps(msgs)}
+    generation = model.chat(input)
+    response = {"text": generation, "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}}
+    print(response)
+    return response
 
 # 流式响应
 async def predict(model_id: str, params: dict):
@@ -337,8 +478,10 @@ async def create_chat_completion(request: ChatCompletionRequest):
     # 单次响应
     if STATE_MOD == "cog":
         response = generate_cogvlm(model, tokenizer, gen_params)
-    else:
+    elif STATE_MOD == "moon":
         response = generate_moondream(gen_params)
+    elif STATE_MOD == "omni":
+        response = generate_omni(model, tokenizer, gen_params)
     usage = UsageInfo()
     message = ChatMessageResponse(
         role="assistant",
@@ -382,10 +525,13 @@ def load_mod(model_input, mod_type):
                 model_input,
                 trust_remote_code=True
             ).float().to(DEVICE).eval()
-    else:
+    elif mod_type == "moon":
         device, dtype = detect_device()
         model = Moondream.from_pretrained(model_input).to(device=device, dtype=dtype).eval()
         tokenizer = Tokenizer.from_pretrained(model_input)
+    elif mod_type == "omni":
+        device, dtype = detect_device()
+        model, tokenizer = OmniLMM12B(model_input), None
 
 @app.post("/v1/Cog-vqa")
 async def switch_vqa():
@@ -413,6 +559,14 @@ async def switch_moon():
     model = None
     load_mod(mod_moon, STATE_MOD)
 
+@app.post("/v1/Omni")
+async def switch_omni():
+    global model, STATE_MOD, mod_omni
+    STATE_MOD = "omni"
+    del model
+    model = None
+    load_mod(mod_omni, STATE_MOD)
+
 # 关闭
 @app.post("/v1/close")
 async def close():
@@ -430,12 +584,14 @@ mod = args.mod
 mod_vqa = './models/cogagent-vqa-hf'
 mod_chat = './models/cogagent-chat-hf'
 mod_moon = './models/moondream'
+mod_omni = './models/OmniLMM-12B'
 
 '''
 mod_list = [
     "moondrean",
     "Cog-vqa",
-    "Cog-chat"
+    "Cog-chat",
+    "OmniLMM"
     ]
 '''
 
@@ -450,6 +606,9 @@ elif mod == "Cog-chat":
 elif mod == "moondream":
     STATE_MOD = "moon"
     MODEL_PATH = mod_moon
+elif mod == "OmniLMM":
+    STATE_MOD = "omni"
+    MODEL_PATH = mod_omni
 
 if __name__ == "__main__":
     if torch.cuda.is_available() and torch.cuda.get_device_capability()[0] >= 8:
