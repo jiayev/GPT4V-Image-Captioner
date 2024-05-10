@@ -1,3 +1,4 @@
+import io
 import os
 import time
 import json
@@ -5,6 +6,7 @@ import base64
 import requests
 import subprocess
 import platform
+from PIL import Image
 from requests.adapters import HTTPAdapter
 import re
 from urllib3.util.retry import Retry
@@ -12,6 +14,8 @@ from huggingface_hub import snapshot_download
 
 API_PATH = 'api_settings.json'
 QWEN_MOD = 'qwen-vl-plus'
+DEFAULT_GPT_MODEL = 'gpt-4-vision-preview'
+DEFAULT_CLAUDE_MODEL = 'claude-3-sonnet'
 
 # 扩展prompt {} 标记功能，从文件读取额外内容
 def addition_prompt_process(prompt, image_path):
@@ -37,6 +41,12 @@ def addition_prompt_process(prompt, image_path):
 # 通义千问VL
 def is_ali(api_url):
     if api_url.endswith("/v1/services/aigc/multimodal-generation/generation"):
+        return True
+    else:
+        return False
+    
+def is_claude(api_url, model):
+    if api_url.endswith("v1/messages") or "claude" in model.lower():
         return True
     else:
         return False
@@ -80,15 +90,115 @@ def qwen_api(image_path, prompt, api_key):
         caption = response
     return caption
 
+def claude_api(image_path, prompt, api_key, api_url, model, quality=None):
+    print(f"CLAUDE_MODEL: {model}")
+    
+    with open(image_path, "rb") as image_file:
+        # Downscale the image
+        image = Image.open(image_file)
+        width, height = image.size
+        if quality:
+            if quality == "high":
+                target = 1024
+            elif quality == "low":
+                target = 512
+            elif quality == "auto":
+                if width >= 1024 or height >= 1024:
+                    target = 1024
+                else:
+                    target = 512
+        else:
+            target = 1024
+            
+        aspect_ratio = width / height
+
+        # Determine the new dimensions while maintaining the aspect ratio
+        if width > target or height > target:
+            if width > height:
+                new_width = target
+                new_height = int(new_width / aspect_ratio)
+            else:
+                new_height = target
+                new_width = int(new_height * aspect_ratio)
+        else:
+            new_width, new_height = width, height
+
+        # Resize the image
+        resized_image = image.resize((new_width, new_height), Image.LANCZOS)
+        # Use buffer to store image
+        buffer = io.BytesIO()
+        resized_image.save(buffer, format="JPEG")
+        image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+    # Claude API
+    data = {
+        "model": model,
+        "max_tokens": 300,
+        "messages": [
+            {"role": "user", "content": [
+                    {"type": "image", "source": {
+                            "type": "base64",
+                            "media_type": "image/jpeg",
+                            "data": image_base64
+                        }
+                    },
+                    {"type": "text", "text": prompt}
+                ]  
+            }
+        ]
+    }
+
+    print(f"data: {data}\n")
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+        "anthropic-version": "2023-06-01"
+    }
+
+    # 配置重试策略
+    retries = Retry(total=5,
+                    backoff_factor=1,
+                    status_forcelist=[429, 500, 502, 503, 504],
+                    allowed_methods=["HEAD", "GET", "OPTIONS", "POST"])  # 更新参数名
+    
+    with requests.Session() as s:
+        s.mount('https://', HTTPAdapter(max_retries=retries))
+
+        try:
+            response = s.post(api_url, headers=headers, json=data)
+            response.raise_for_status()
+        # 连接错误回显
+        except requests.exceptions.HTTPError as errh:
+            return f"HTTP Error: {errh}"
+        except requests.exceptions.ConnectionError as errc:
+            return f"Error Connecting: {errc}"
+        except requests.exceptions.Timeout as errt:
+            return f"Timeout Error: {errt}"
+        except requests.exceptions.RequestException as err:
+            return f"OOps: Something Else: {err}"
+        
+    try:
+        response_data = response.json()
+        if 'error' in response_data:
+            return f"API error: {response_data['error']['message']}"
+        caption = response_data["content"]["text"]
+        return caption
+    except Exception as e:
+        return f"Failed to parse the API response: {e}\n{response.text}"
+    
+
+
 # API使用
-def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=10):
+def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=10, model=DEFAULT_GPT_MODEL):
     prompt = addition_prompt_process(prompt, image_path)
     # print("prompt{}:",prompt)
 
     # Qwen-VL
     if is_ali(api_url):
         return qwen_api(image_path, prompt, api_key)
-
+    if is_claude(api_url, model):
+        return claude_api(image_path, prompt, api_key, api_url, model, quality)
     with open(image_path, "rb") as image_file:
         image_base64 = base64.b64encode(image_file.read()).decode('utf-8')
 
@@ -148,6 +258,7 @@ def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=1
         return caption
     except Exception as e:
         return f"Failed to parse the API response: {e}\n{response.text}"
+
 
 # API存档
 def save_api_details(api_key, api_url):
