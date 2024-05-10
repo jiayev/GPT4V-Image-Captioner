@@ -80,9 +80,8 @@ def qwen_api(image_path, prompt, api_key):
         caption = response
     return caption
 
-model = "gpt-4-vision-preview"
 # API使用
-def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=10):
+def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=10, model="gpt-4-vision-preview"):
     prompt = addition_prompt_process(prompt, image_path)
     # print("prompt{}:",prompt)
 
@@ -111,6 +110,8 @@ def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=1
         ],
         "max_tokens": 300
     }
+
+    print(f"data: {data}")
 
     headers = {
         "Content-Type": "application/json",
