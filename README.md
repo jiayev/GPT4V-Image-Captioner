@@ -4,13 +4,13 @@
 
 We now have [sd-webui-GPT4V-Image-Captioner](https://github.com/SleeeepyZhou/sd-webui-GPT4V-Image-Captioner) for SD WebUI
 
-This is a multifunctional image processing toolbox built with Gradio, capable of tagging images using the GPT-4-vision API, the [cogVLM](https://github.com/THUDM/CogVLM) model, [Qwen-VL](https://huggingface.co/Qwen)(Alibaba Cloud), the [Moondream](https://github.com/vikhyat/moondream) model. 
+This is a multifunctional image processing toolbox built with Gradio, capable of tagging images using the GPT-4-vision or Claude 3 API, the [cogVLM](https://github.com/THUDM/CogVLM) model, [Qwen-VL](https://huggingface.co/Qwen)(Alibaba Cloud), the [Moondream](https://github.com/vikhyat/moondream) model. 
 
 Key features include:
 
 - One-click installation and use
 - Single image and multi-image batch tagging
-- Choice of online GPT4V or [Qwen-VL](https://huggingface.co/Qwen)(Alibaba Cloud) & local CogVLM and Moondream models
+- Choice of online GPT4V or Claude 3 or [Qwen-VL](https://huggingface.co/Qwen)(Alibaba Cloud) & local CogVLM and Moondream models
 - Visual tag analysis and processing
 - Image pre-compression
 - Keyword filtering and watermark image recognition
@@ -19,6 +19,7 @@ Developers: [Jiaye](https://civitai.com/user/jiayev1), [LEOSAM是只兔狲](http
 
 ![下载](https://github.com/jiayev/GPT4V-Image-Captioner/assets/16369810/90612e2b-aac1-4368-84d6-482bb660f5aa)
 
+To use Claude 3, simply replace the API key and URL with the Claude 3 API key and URL (/v1/messages), and changing the model name to "claude-3-opus" (or sonnet).
 
 # Installation and Startup Guide
 

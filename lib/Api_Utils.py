@@ -148,7 +148,7 @@ def claude_api(image_path, prompt, api_key, api_url, model, quality=None):
         ]
     }
 
-    print(f"data: {data}\n")
+    # print(f"data: {data}\n")
 
     headers = {
         "Content-Type": "application/json",
@@ -182,7 +182,7 @@ def claude_api(image_path, prompt, api_key, api_url, model, quality=None):
         response_data = response.json()
         if 'error' in response_data:
             return f"API error: {response_data['error']['message']}"
-        caption = response_data["content"]["text"]
+        caption = response_data['content'][0]['text']
         return caption
     except Exception as e:
         return f"Failed to parse the API response: {e}\n{response.text}"

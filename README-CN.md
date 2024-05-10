@@ -10,7 +10,7 @@
 
 - 一键安装及使用
 - 单图反推及批量打标功能
-- 云端 GPT4V 或 阿里云[通义千问VL](https://modelscope.cn/organization/qwen) & 本地 [CogVLM](https://github.com/THUDM/CogVLM) 或 [Moondream](https://github.com/vikhyat/moondream)双模型可选
+- 云端 GPT4V 或 Claude 3 及阿里云[通义千问VL](https://modelscope.cn/organization/qwen) & 本地 [CogVLM](https://github.com/THUDM/CogVLM) 或 [Moondream](https://github.com/vikhyat/moondream)双模型可选
 - 可视化标签分析与处理
 - 图像分桶预压缩
 - 关键词筛查及水印图像识别
@@ -21,6 +21,7 @@
 
 ![下载](https://github.com/jiayev/GPT4V-Image-Captioner/assets/16369810/90612e2b-aac1-4368-84d6-482bb660f5aa)
 
+要使用Claude 3，只需将API密钥和URL替换为Claude 3的API密钥和URL (/v1/messages)，并将模型名称更改为"claude-3-opus"（或sonnet）。
 
 # 安装和启动指南
 
