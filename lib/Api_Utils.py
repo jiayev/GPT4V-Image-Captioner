@@ -80,6 +80,7 @@ def qwen_api(image_path, prompt, api_key):
         caption = response
     return caption
 
+model = "gpt-4-vision-preview"
 # API使用
 def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=10):
     prompt = addition_prompt_process(prompt, image_path)
@@ -94,7 +95,7 @@ def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=1
 
     # GPT-4V
     data = {
-        "model": "gpt-4-vision-preview",
+        "model": model,
         "messages": [
             {
                 "role": "user",
@@ -176,7 +177,7 @@ def save_state(llm, key, url):
             'api_url': url
         }
 
-    elif llm[:3] == "Cog" or llm[:4] == "moon":
+    elif llm[:3] == "Cog" or llm[:4] == "moon" or llm[:3] == "Omni":
         settings = {
             'model' : llm,
             'api_key': "",
@@ -238,10 +239,24 @@ def downloader(model_type, acceleration):
             max_workers=8,
             endpoint=endpoint
         )
-    else:
+    elif model_type == 'moon':
         snapshot_download(
             repo_id="vikhyatk/moondream1",
             local_dir="./models/moondream",
+            max_workers=8,
+            endpoint=endpoint
+        )
+    elif model_type == 'omni':
+        snapshot_download(
+            repo_id="openbmb/OmniLMM-12B",
+            local_dir="./models/OmniLMM-12B",
+            max_workers=8,
+            endpoint=endpoint
+        )
+    elif model_type == 'vila':
+        snapshot_download(
+            repo_id="Efficient-Large-Model/VILA1.5-13b",
+            local_dir="./models/VILA1.5-13b",
             max_workers=8,
             endpoint=endpoint
         )

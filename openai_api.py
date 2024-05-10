@@ -1,4 +1,6 @@
 import gc
+import io
+import json
 import time
 import requests
 import base64
@@ -8,6 +10,12 @@ import argparse
 import torch
 from transformers import AutoModelForCausalLM, LlamaTokenizer, PreTrainedModel, PreTrainedTokenizer, \
 TextIteratorStreamer, CodeGenTokenizerFast as Tokenizer
+from transformers import AutoModel, AutoTokenizer, BitsAndBytesConfig
+
+from omnilmm.utils import disable_torch_init
+from omnilmm.model.omnilmm import OmniLMMForCausalLM
+from omnilmm.model.utils import build_transform
+from omnilmm.train.train_utils import omni_preprocess
 
 from contextlib import asynccontextmanager
 from loguru import logger
@@ -24,6 +32,22 @@ import os
 import re
 from threading import Thread
 from moondream import Moondream, detect_device
+
+from llava.constants import IMAGE_TOKEN_INDEX
+from llava.conversation import SeparatorStyle, conv_templates
+from llava.mm_utils import (KeywordsStoppingCriteria, process_images, get_model_name_from_path,
+                            tokenizer_image_token)
+from llava.model import *
+
+
+from llava.model.builder import load_pretrained_model
+
+DEFAULT_IMAGE_TOKEN = "<image>"
+DEFAULT_IMAGE_PATCH_TOKEN = "<im_patch>"
+DEFAULT_IM_START_TOKEN = "<im_start>"
+DEFAULT_IM_END_TOKEN = "<im_end>"
+
+# quantization_config = BitsAndBytesConfig(load_in_8bit=True, llm_int8_skip_modules=['lm_head'])
 
 # 请求
 class TextContent(BaseModel):
@@ -98,6 +122,215 @@ def process_img(input_data):
 
     return pil_image
 
+def eval_vila_model(args, model, tokenizer, image_processor):
+    # read json file
+    with open(args.test_json_path) as f:
+        all_test_cases = json.load(f)
+
+    result_list = []
+    print(len(all_test_cases["test_cases"]))
+
+    for test_case in all_test_cases["test_cases"]:
+        # read images first
+        image_file_list = test_case["image_paths"]
+        image_list = [
+            Image.open(os.path.join(args.test_image_path, image_file)).convert("RGB") for image_file in image_file_list
+        ]
+        image_tensor = process_images(image_list, image_processor, model.config)
+
+        # image_tokens = DEFAULT_IMAGE_PATCH_TOKEN * image_token_len
+
+        for i in range(len(test_case["QAs"])):
+            query = test_case["QAs"][i]["question"]
+            query_text = query
+
+            if 1:
+                # query = query.replace("<image>", image_tokens)
+                if len(image_list) < 3:
+                    conv = conv_templates["vicuna_v1"].copy()
+                else:
+                    conv = conv_templates["vicuna_v1_nosys"].copy()
+                conv.append_message(conv.roles[0], query)
+                conv.append_message(conv.roles[1], None)
+                prompt = conv.get_prompt()
+            else:
+                conv = conv_templates[args.conv_mode].copy()
+                if not "<image>" in query:
+                    assert "###" not in query  # single query
+                    query = image_tokens + "\n" + query  # add <image>
+                    query_list = [query]
+                else:
+                    query_list = query.split("###")
+                    assert len(query_list) % 2 == 1  # the last one is from human
+
+                    new_query_list = []
+                    for idx, query in enumerate(query_list):
+                        if "<image>" in query:
+                            assert idx % 2 == 0  # only from human
+                            # assert query.startswith("<image>")
+                        # query = query.replace("<image>", image_tokens)
+                        new_query_list.append(query)
+                    query_list = new_query_list
+
+                for idx, query in enumerate(query_list):
+                    conv.append_message(conv.roles[idx % 2], query)
+                conv.append_message(conv.roles[1], None)
+                prompt = conv.get_prompt()
+
+            print("%" * 10 + " " * 5 + "VILA Response" + " " * 5 + "%" * 10)
+
+            # inputs = tokenizer([prompt])
+            inputs = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX)
+            input_ids = torch.as_tensor(inputs).cuda().unsqueeze(0)
+
+            stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
+            keywords = [stop_str]
+            stopping_criteria = KeywordsStoppingCriteria(keywords, tokenizer, input_ids)
+
+            # outputs = run_llava.process_outputs(args, model, tokenizer, input_ids, image_tensor, stopping_criteria, stop_str)
+            with torch.inference_mode():
+                output_ids = model.generate(
+                    input_ids,
+                    images=image_tensor.to(dtype=torch.float16, device="cuda", non_blocking=True),
+                    do_sample=True if args.temperature > 0 else False,
+                    temperature=args.temperature,
+                    top_p=0.7,
+                    # top_p=args.top_p,
+                    # num_beams=args.num_beams,
+                    max_new_tokens=512,
+                    # use_cache=True,
+                    stopping_criteria=[stopping_criteria],
+                )
+
+            outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0]
+            outputs = outputs.strip()
+
+            print(f"Question: {query_text}")
+            print(f"VILA output: {outputs}")
+            print(f'Expected output: {test_case["QAs"][i]["expected_answer"]}')
+
+            result_list.append(
+                dict(question=query_text, output=outputs, expected_output=test_case["QAs"][i]["expected_answer"])
+            )
+    return result_list
+
+def init_omni_lmm(model_path):
+    torch.backends.cuda.matmul.allow_tf32 = True
+    disable_torch_init()
+    model_name = os.path.expanduser(model_path)
+    print(f'Load omni_lmm model and tokenizer from {model_name}')
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_name, model_max_length=2048)
+
+    if False:
+        # model on multiple devices for small size gpu memory (Nvidia 3090 24G x2) 
+        with init_empty_weights():
+            model = OmniLMMForCausalLM.from_pretrained(model_name, tune_clip=True, torch_dtype=torch.bfloat16)
+        model = load_checkpoint_and_dispatch(model, model_name, dtype=torch.bfloat16, 
+                    device_map="auto",  no_split_module_classes=['Eva','MistralDecoderLayer', 'ModuleList', 'Resampler']
+        )
+    else:
+        model = OmniLMMForCausalLM.from_pretrained(
+            model_name, tune_clip=True, torch_dtype=torch.bfloat16
+        ).to(device='cuda', dtype=torch.bfloat16)
+
+    image_processor = build_transform(
+        is_train=False, input_size=model.model.config.image_size, std_mode='OPENAI_CLIP')
+
+    mm_use_im_start_end = getattr(model.config, "mm_use_im_start_end", False)
+    assert mm_use_im_start_end
+
+    tokenizer.add_tokens([DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_START_TOKEN,
+                         DEFAULT_IM_END_TOKEN], special_tokens=True)
+
+
+    vision_config = model.model.vision_config
+    vision_config.im_patch_token = tokenizer.convert_tokens_to_ids(
+        [DEFAULT_IMAGE_PATCH_TOKEN])[0]
+    vision_config.use_im_start_end = mm_use_im_start_end
+    vision_config.im_start_token, vision_config.im_end_token = tokenizer.convert_tokens_to_ids(
+        [DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN])
+    image_token_len = model.model.config.num_query
+
+    return model, image_processor, image_token_len, tokenizer
+
+def expand_question_into_multimodal(question_text, image_token_len, im_st_token, im_ed_token, im_patch_token):
+    if '<image>' in question_text[0]['content']:
+        question_text[0]['content'] = question_text[0]['content'].replace(
+            '<image>', im_st_token + im_patch_token * image_token_len + im_ed_token)
+    else:
+        question_text[0]['content'] = im_st_token + im_patch_token * \
+            image_token_len + im_ed_token + '\n' + question_text[0]['content']
+    return question_text
+
+def wrap_question_for_omni_lmm(question, image_token_len, tokenizer):
+    question = expand_question_into_multimodal(
+        question, image_token_len, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN, DEFAULT_IMAGE_PATCH_TOKEN)
+
+    conversation = question
+    data_dict = omni_preprocess(sources=[conversation],
+                                  tokenizer=tokenizer,
+                                  generation=True)
+
+    data_dict = dict(input_ids=data_dict["input_ids"][0],
+                     labels=data_dict["labels"][0])
+    return data_dict
+
+
+
+class OmniLMM12B:
+    def __init__(self, model_path) -> None:
+        model, img_processor, image_token_len, tokenizer = init_omni_lmm(model_path)
+        self.model = model
+        self.image_token_len = image_token_len
+        self.image_transform = img_processor
+        self.tokenizer = tokenizer
+        self.model.eval()
+
+    def decode(self, image, input_ids):
+        with torch.inference_mode():
+            output = self.model.generate_vllm(
+                input_ids=input_ids.unsqueeze(0).cuda(),
+                images=image.unsqueeze(0).half().cuda(),
+                temperature=0.6,
+                max_new_tokens=1024,
+                # num_beams=num_beams,
+                do_sample=True,
+                output_scores=True,
+                return_dict_in_generate=True,
+                repetition_penalty=1.1,
+                top_k=30,
+                top_p=0.9,
+            )
+
+            response = self.tokenizer.decode(
+                output.sequences[0], skip_special_tokens=True)
+            response = response.strip()
+            return response
+
+    def chat(self, input):
+        try:
+            image = Image.open(io.BytesIO(base64.b64decode(input['image']))).convert('RGB')
+        except Exception as e:
+            return f"Image decode error, {e}"
+
+        msgs = json.loads(input['question'])
+        input_ids = wrap_question_for_omni_lmm(
+            msgs, self.image_token_len, self.tokenizer)['input_ids']
+        input_ids = torch.as_tensor(input_ids)
+        #print('input_ids', input_ids)
+        image = self.image_transform(image)
+
+        out = self.decode(image, input_ids)
+
+        return out
+        
+
+def img2base64(file_name):
+    with open(file_name, 'rb') as f:
+        encoded_string = base64.b64encode(f.read())
+        return encoded_string
+
 # 历史消息处理
 def process_history_and_images(messages: List[ChatMessageInput]) -> Tuple[
     Optional[str], Optional[List[Tuple[str, str]]], Optional[List[Image.Image]]]:
@@ -137,6 +370,37 @@ def process_history_and_images(messages: List[ChatMessageInput]) -> Tuple[
             assert False, f"unrecognized role: {role}"
 
     return last_user_query, formatted_history, image_list
+
+# Vila推理
+def generate_vila(model, tokenizer, image_processor, context_len, params: dict):
+    messages = params["messages"]
+    query, history, image_list = process_history_and_images(messages)
+    msgs = history
+    msgs.append({'role': 'user', 'content': query})
+    image = image_list[-1]
+    image_tensor = process_images([image], image_processor, model.config)
+    conv = conv_templates["vicuna_v1"].copy()
+    conv.append_message(conv.roles[0], query)
+    conv.append_message(conv.roles[1], None)
+    prompt = conv.get_prompt()
+    inputs = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX)
+    input_ids = torch.as_tensor(inputs).cuda().unsqueeze(0)
+    stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
+    keywords = [stop_str]
+    stopping_criteria = KeywordsStoppingCriteria(keywords, tokenizer, input_ids)
+    with torch.inference_mode():
+        output_ids = model.generate(
+            input_ids,
+            images=image_tensor.to(dtype=torch.float16, device="cuda", non_blocking=True),
+            do_sample=True,
+            temperature=0.6,
+            top_p=0.7,
+            max_new_tokens=512,
+            stopping_criteria=[stopping_criteria],
+        )
+    outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0]
+    outputs = outputs.strip()
+    return outputs
 
 @torch.inference_mode()
 # Moondrean推理
@@ -216,6 +480,25 @@ def generate_moondream(params: dict):
         pass
     return response
 
+@torch.inference_mode()
+
+# OmniLMM单次响应
+def generate_omni(model: PreTrainedModel, tokenizer: PreTrainedTokenizer, params: dict):
+    messages = params["messages"]
+    query, history, image_list = process_history_and_images(messages)
+    msgs = history
+    msgs.append({'role': 'user', 'content': query})
+    image = image_list[-1]
+    # image is a PIL image
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG")  # You can adjust the format as needed
+    buffer.seek(0)
+    image_base64 = base64.b64encode(buffer.read())
+    image_base64_str = image_base64.decode("utf-8")
+    input = {'image': image_base64_str, 'question': json.dumps(msgs)}
+    response = model.chat(input)
+    print(response)
+    return response
 
 @torch.inference_mode()
 # CogVLM推理
@@ -314,7 +597,7 @@ app.add_middleware(
 # 对话路由
 @app.post("/v1/chat/completions", response_model=ChatCompletionResponse)
 async def create_chat_completion(request: ChatCompletionRequest):
-    global model, tokenizer
+    global model, tokenizer, image_processor, context_len
 
     # 检查请求
     if len(request.messages) < 1 or request.messages[-1].role == "assistant":
@@ -337,8 +620,12 @@ async def create_chat_completion(request: ChatCompletionRequest):
     # 单次响应
     if STATE_MOD == "cog":
         response = generate_cogvlm(model, tokenizer, gen_params)
-    else:
+    elif STATE_MOD == "moon":
         response = generate_moondream(gen_params)
+    elif STATE_MOD == "omni":
+        response = generate_omni(model, tokenizer, gen_params)
+    elif STATE_MOD == "vila":
+        response = generate_vila(model, tokenizer, image_processor, context_len, gen_params)
     usage = UsageInfo()
     message = ChatMessageResponse(
         role="assistant",
@@ -382,10 +669,15 @@ def load_mod(model_input, mod_type):
                 model_input,
                 trust_remote_code=True
             ).float().to(DEVICE).eval()
-    else:
+    elif mod_type == "moon":
         device, dtype = detect_device()
         model = Moondream.from_pretrained(model_input).to(device=device, dtype=dtype).eval()
         tokenizer = Tokenizer.from_pretrained(model_input)
+    elif mod_type == "omni":
+        device, dtype = detect_device()
+        model, tokenizer = OmniLMM12B(model_input), None
+    elif mod_type == "vila":
+        tokenizer, model, image_processor, context_len = load_pretrained_model(model_input, get_model_name_from_path(model_input), None, load_4bit=True)
 
 @app.post("/v1/Cog-vqa")
 async def switch_vqa():
@@ -413,6 +705,22 @@ async def switch_moon():
     model = None
     load_mod(mod_moon, STATE_MOD)
 
+@app.post("/v1/Omni")
+async def switch_omni():
+    global model, STATE_MOD, mod_omni
+    STATE_MOD = "omni"
+    del model
+    model = None
+    load_mod(mod_omni, STATE_MOD)
+
+@app.post("/v1/VILA")
+async def switch_vila():
+    global model, STATE_MOD, mod_vila
+    STATE_MOD = "vila"
+    del model
+    model = None
+    load_mod(mod_vila, STATE_MOD)
+
 # 关闭
 @app.post("/v1/close")
 async def close():
@@ -430,6 +738,8 @@ mod = args.mod
 mod_vqa = './models/cogagent-vqa-hf'
 mod_chat = './models/cogagent-chat-hf'
 mod_moon = './models/moondream'
+mod_omni = './models/OmniLMM-12B'
+mod_vila = './models/VILA1.5-13b'
 
 '''
 mod_list = [
@@ -450,6 +760,12 @@ elif mod == "Cog-chat":
 elif mod == "moondream":
     STATE_MOD = "moon"
     MODEL_PATH = mod_moon
+elif mod == "OmniLMM":
+    STATE_MOD = "omni"
+    MODEL_PATH = mod_omni
+elif mod == "VILA":
+    STATE_MOD = "vila"
+    MODEL_PATH = mod_vila
 
 if __name__ == "__main__":
     if torch.cuda.is_available() and torch.cuda.get_device_capability()[0] >= 8:

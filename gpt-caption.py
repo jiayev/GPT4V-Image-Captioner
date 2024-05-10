@@ -21,6 +21,7 @@ from lib.Detecter import detecter
 os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
 mod_default, saved_api_key, saved_api_url = get_api_details()
 SUPPORTED_IMAGE_FORMATS = ('.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif', '.tiff', '.tif')
+DEFAULT_GPT4V = "gpt-4-vision-preview"
 
 # 图像打标
 should_stop = threading.Event()
@@ -284,7 +285,7 @@ def switch_API(api, state):
             mod = 'GPT4V'
         s_state = mod
 
-    elif api[:3] == 'Cog' or api[:4] == "moon":
+    elif api[:3] == 'Cog' or api[:4] == "moon" or api[:4] == "Omni" or api[:4] == "VILA":
         if is_connection():
             if state != api:
                 requests.post(f"http://127.0.0.1:8000/v1/{api}")
@@ -314,6 +315,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                                    value=saved_api_key)
         api_url_input = gr.Textbox(label="API URL", value=saved_api_url or "https://api.openai.com/v1/chat/completions",
                                    placeholder="Enter the GPT-4-Vision API URL here")
+        api_model_input = gr.Textbox(label="API Model", value="gpt-4-vision-preview", placeholder="Enter the GPT-4-Vision API Model here")
         quality_choices = [
             ("Auto / 自动", "auto"),
             ("High Detail - More Expensive / 高细节-更贵", "high"),
@@ -550,7 +552,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                 detecter_output = gr.Textbox(label="Check Env / 环境检测", interactive=False)
                 detect_button = gr.Button("Check / 检查", variant='primary')
             with gr.Row():
-                models_select = gr.Radio(label="Choose Models / 选择模型", choices=["moondream","vqa", "chat"], value="moondream")
+                models_select = gr.Radio(label="Choose Models / 选择模型", choices=["moondream","vqa", "chat", "omni", "vila"], value="moondream")
                 acceleration_select = gr.Radio(label="Choose Default Plz / 选择是否国内加速(如果使用国内加速,请关闭魔法上网)", choices=["CN", "default"],
                                                value="CN")
                 download_button = gr.Button("Download Models / 下载模型", variant='primary')
@@ -563,7 +565,9 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             "qwen-vl-max",
             "moondream",
             "Cog-vqa",
-            "Cog-chat"
+            "Cog-chat",
+            "OmniLMM",
+            "VILA"
             ]
         with gr.Row():
             switch_select = gr.Dropdown(label="Choose API / 选择API", choices=mod_list, value="GPT4V")
