@@ -152,7 +152,7 @@ def claude_api(image_path, prompt, api_key, api_url, model, quality=None):
 
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}",
+        "x-api-key:": api_key,
         "anthropic-version": "2023-06-01"
     }
 
