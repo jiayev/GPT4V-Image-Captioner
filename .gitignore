@@ -19,3 +19,4 @@ Thumbs.db
 *.sln
 
 flash_attn-2.4.2+cu118torch2.0cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
+saved_prompts.csv

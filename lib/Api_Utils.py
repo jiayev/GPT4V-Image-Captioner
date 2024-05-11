@@ -134,6 +134,7 @@ def claude_api(image_path, prompt, api_key, api_url, model, quality=None):
     data = {
         "model": model,
         "max_tokens": 300,
+        "system": prompt,
         "messages": [
             {"role": "user", "content": [
                     {"type": "image", "source": {
@@ -152,7 +153,7 @@ def claude_api(image_path, prompt, api_key, api_url, model, quality=None):
 
     headers = {
         "Content-Type": "application/json",
-        "x-api-key:": api_key,
+        "Authorization": f"Bearer {api_key}",
         "anthropic-version": "2023-06-01"
     }
 
@@ -204,10 +205,10 @@ def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=1
 
     # GPT-4V
     data = {
-        "model": "gpt-4-vision-preview",
+        "model": model,
         "messages": [
             {
-                "role": "user",
+                "role": "system",
                 "content":
                 [
                     {"type": "image_url", "image_url":
@@ -220,6 +221,8 @@ def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=1
         ],
         "max_tokens": 300
     }
+
+    print(f"data: {data}\n")
 
     headers = {
         "Content-Type": "application/json",
