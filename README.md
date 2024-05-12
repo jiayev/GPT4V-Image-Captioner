@@ -19,6 +19,7 @@ Developers: [Jiaye](https://civitai.com/user/jiayev1), [LEOSAM是只兔狲](http
 
 ![下载](https://github.com/jiayev/GPT4V-Image-Captioner/assets/16369810/90612e2b-aac1-4368-84d6-482bb660f5aa)
 
+### Please note that the Claude 3 feature is not finished yet.
 To use Claude 3, simply replace the API key and URL with the Claude 3 API key and URL (/v1/messages), and changing the model name to "claude-3-opus" (or sonnet).
 
 # Installation and Startup Guide
