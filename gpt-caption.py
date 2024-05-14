@@ -28,13 +28,13 @@ def stop_batch_processing():
     should_stop.set()
     return "Attempting to stop batch processing. Please wait for the current image to finish."
 
-def process_single_image(api_key, prompt, api_url, image_path, quality, timeout, model="gpt-4-turbo-vision"):
+def process_single_image(api_key, prompt, api_url, image_path, quality, timeout, model="gpt-4o"):
     save_api_details(api_key, api_url)
     caption = run_openai_api(image_path, prompt, api_key, api_url, quality, timeout, model)
     print(caption)
     return caption
 
-def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode, quality, timeout, model="gpt-4-turbo-vision"):
+def process_batch_images(api_key, prompt, api_url, image_dir, file_handling_mode, quality, timeout, model="gpt-4o"):
     should_stop.clear()
     save_api_details(api_key, api_url)
     results = []
@@ -120,7 +120,7 @@ def handle_file(image_path, target_path, file_handling_mode):
     return
 
 def process_batch_watermark_detection(api_key, prompt, api_url, image_dir, detect_file_handling_mode, quality, timeout,
-                                      watermark_dir, model="gpt-4-turbo-vision"):
+                                      watermark_dir, model="gpt-4o"):
     should_stop.clear()
     save_api_details(api_key, api_url)
     results = []
@@ -207,7 +207,7 @@ def classify_images(api_key, api_url, quality, prompt, timeout, detect_file_hand
         return "Error: All rules are empty. / 错误：未设置规则"
 
     # 图像处理
-    def process_image(filename, rules, detect_file_handling_mode, image_dir, o_dir, model="gpt-4-turbo-vision"):
+    def process_image(filename, rules, detect_file_handling_mode, image_dir, o_dir, model="gpt-4o"):
         image_path = os.path.join(image_dir, filename)
         caption = run_openai_api(image_path, prompt, api_key, api_url, quality, timeout, model)
 
@@ -314,7 +314,7 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                                    value=saved_api_key)
         api_url_input = gr.Textbox(label="API URL", value=saved_api_url or "https://api.openai.com/v1/chat/completions",
                                    placeholder="Enter the GPT-4-Vision API URL here")
-        api_model_input = gr.Textbox(label="API Model", value="gpt-4-turbo-vision", placeholder="Enter the model name here")
+        api_model_input = gr.Textbox(label="API Model", value="gpt-4o", placeholder="Enter the model name here")
         quality_choices = ["auto", "high", "low"]
         quality = gr.Dropdown(choices=quality_choices, label="Image Quality / 图片质量", value="auto")
         timeout_input = gr.Number(label="Timeout (seconds) / 超时时间（秒）", value=10, step=1)
@@ -450,15 +450,15 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                     rule_input = gr.Textbox(label="Custom / 自定义", placeholder="Enter the words you need to filter / 输入你需要筛选的词")
                     rule_inputs.extend([rule_type, rule_input])
 
-    def caption_image(api_key, api_url, prompt, image, quality, timeout, model="gpt-4-turbo-vision"):
+    def caption_image(api_key, api_url, prompt, image, quality, timeout, model="gpt-4o"):
         if image:
             return process_single_image(api_key, prompt, api_url, image, quality, timeout, model)
 
-    def batch_process(api_key, api_url, prompt, batch_dir, file_handling_mode, quality, timeout, model="gpt-4-turbo-vision"):
+    def batch_process(api_key, api_url, prompt, batch_dir, file_handling_mode, quality, timeout, model="gpt-4o"):
         process_batch_images(api_key, prompt, api_url, batch_dir, file_handling_mode, quality, timeout, model)
         return "Batch processing complete. Captions saved or updated as '.txt' files next to images."
 
-    def batch_detect(api_key, api_url, prompt, batch_dir, detect_file_handling_mode, quality, timeout, watermark_dir, model="gpt-4-turbo-vision"):
+    def batch_detect(api_key, api_url, prompt, batch_dir, detect_file_handling_mode, quality, timeout, watermark_dir, model="gpt-4o"):
         results = process_batch_watermark_detection(api_key, prompt, api_url, batch_dir, detect_file_handling_mode,
                                                     quality, timeout,watermark_dir, model)
         return results
