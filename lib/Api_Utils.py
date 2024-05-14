@@ -204,7 +204,7 @@ def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=1
 
     # GPT-4V
     data = {
-        "model": "gpt-4o",
+        "model": model,
         "messages": [
             {
                 "role": "user",
