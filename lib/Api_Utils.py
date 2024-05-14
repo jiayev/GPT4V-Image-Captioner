@@ -14,7 +14,7 @@ from huggingface_hub import snapshot_download
 
 API_PATH = 'api_settings.json'
 QWEN_MOD = 'qwen-vl-plus'
-DEFAULT_GPT_MODEL = 'gpt-4-vision-preview'
+DEFAULT_GPT_MODEL = 'gpt-4o'
 DEFAULT_CLAUDE_MODEL = 'claude-3-sonnet'
 
 # 扩展prompt {} 标记功能，从文件读取额外内容
@@ -204,7 +204,7 @@ def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=1
 
     # GPT-4V
     data = {
-        "model": "gpt-4-vision-preview",
+        "model": "gpt-4o",
         "messages": [
             {
                 "role": "user",
