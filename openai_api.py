@@ -1,4 +1,5 @@
 import gc
+import json
 import time
 import requests
 import base64
@@ -24,6 +25,8 @@ import os
 import re
 from threading import Thread
 from moondream import Moondream, detect_device
+
+import omnichat
 
 # 请求
 class TextContent(BaseModel):
@@ -288,6 +291,23 @@ def generate_cogvlm(model: PreTrainedModel, tokenizer: PreTrainedTokenizer, para
         pass
     return response
 
+def generate_minicpm(model, params):
+    messages = params["messages"]
+    query, history, image_list = process_history_and_images(messages)
+    msgs = history
+    msgs.append({'role': 'user', 'content': query})
+    image = image_list[-1]
+    # image is a PIL image
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG")  # You can adjust the format as needed
+    buffer.seek(0)
+    image_base64 = base64.b64encode(buffer.read())
+    image_base64_str = image_base64.decode("utf-8")
+    input = {'image': image_base64_str, 'question': json.dumps(msgs)}
+    generation = model.chat(input)
+    response = {"text": generation, "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}}
+    print(response)
+    return response
 
 # 流式响应
 async def predict(model_id: str, params: dict):
@@ -337,8 +357,10 @@ async def create_chat_completion(request: ChatCompletionRequest):
     # 单次响应
     if STATE_MOD == "cog":
         response = generate_cogvlm(model, tokenizer, gen_params)
-    else:
+    elif STATE_MOD == "moon":
         response = generate_moondream(gen_params)
+    elif STATE_MOD == "mini":
+        response = generate_minicpm(model, gen_params)
     usage = UsageInfo()
     message = ChatMessageResponse(
         role="assistant",
@@ -382,10 +404,12 @@ def load_mod(model_input, mod_type):
                 model_input,
                 trust_remote_code=True
             ).float().to(DEVICE).eval()
-    else:
+    elif mod_type == "moon":
         device, dtype = detect_device()
         model = Moondream.from_pretrained(model_input).to(device=device, dtype=dtype).eval()
         tokenizer = Tokenizer.from_pretrained(model_input)
+    elif mod_type == "mini":
+        model, tokenizer = omnichat.OmniLMMChat(model_input), None
 
 @app.post("/v1/Cog-vqa")
 async def switch_vqa():
@@ -413,6 +437,14 @@ async def switch_moon():
     model = None
     load_mod(mod_moon, STATE_MOD)
 
+@app.post("/v1/MiniCPM")
+async def switch_mini():
+    global model, STATE_MOD, mod_mini
+    STATE_MOD = "mini"
+    del model
+    model = None
+    load_mod(mod_mini, STATE_MOD)
+
 # 关闭
 @app.post("/v1/close")
 async def close():
@@ -430,12 +462,14 @@ mod = args.mod
 mod_vqa = './models/cogagent-vqa-hf'
 mod_chat = './models/cogagent-chat-hf'
 mod_moon = './models/moondream'
+mod_mini = './models/MiniCPM-Llama3-V-2_5'
 
 '''
 mod_list = [
     "moondrean",
     "Cog-vqa",
     "Cog-chat"
+    "MiniCPM"
     ]
 '''
 
@@ -450,6 +484,9 @@ elif mod == "Cog-chat":
 elif mod == "moondream":
     STATE_MOD = "moon"
     MODEL_PATH = mod_moon
+elif mod == "MiniCPM":
+    STATE_MOD = "mini"
+    MODEL_PATH = mod_mini
 
 if __name__ == "__main__":
     if torch.cuda.is_available() and torch.cuda.get_device_capability()[0] >= 8:

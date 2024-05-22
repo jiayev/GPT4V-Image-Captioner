@@ -287,7 +287,7 @@ def save_state(llm, key, url):
             'api_url': url
         }
 
-    elif llm[:3] == "Cog" or llm[:4] == "moon":
+    elif llm[:3] == "Cog" or llm[:4] == "moon" or llm[:7] == "MiniCPM":
         settings = {
             'model' : llm,
             'api_key': "",
@@ -349,10 +349,17 @@ def downloader(model_type, acceleration):
             max_workers=8,
             endpoint=endpoint
         )
-    else:
+    elif model_type == 'moondream':
         snapshot_download(
             repo_id="vikhyatk/moondream1",
             local_dir="./models/moondream",
+            max_workers=8,
+            endpoint=endpoint
+        )
+    elif model_type == 'minicpm':
+        snapshot_download(
+            repo_id="openbmb/MiniCPM-Llama3-V-2_5",
+            local_dir="./models/MiniCPM-Llama3-V-2_5",
             max_workers=8,
             endpoint=endpoint
         )
