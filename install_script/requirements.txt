@@ -9,3 +9,5 @@ requests
 huggingface_hub
 GPUtil
 dashscope
+google-generativeai
+pillow
