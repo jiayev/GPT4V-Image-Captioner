@@ -15,7 +15,7 @@ import socket
 from lib.Img_Processing import process_images_in_folder, run_script
 from lib.Tag_Processor import modify_file_content, process_tags
 from lib.GPT_Prompt import get_prompts_from_csv, save_prompt, delete_prompt
-from lib.Api_Utils import run_openai_api, save_api_details, get_api_details, downloader, installer, save_state, qwen_api_switch
+from lib.Api_Utils import run_openai_api, save_api_details, get_api_details, downloader, installer, save_state, qwen_api_switch, gemini_api_switch
 from lib.Detecter import detecter
 
 os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
@@ -272,7 +272,7 @@ def switch_API(api, state):
             return True
         except (socket.timeout, ConnectionRefusedError):
             return False
-    if api[:3] == 'GPT' or api[:4] == "qwen":
+    if api[:3] == 'GPT' or api[:4] == "qwen" or api[:6] == "gemini":
         if is_connection():
             requests.post(f"http://127.0.0.1:8000/v1/close")
         key = saved_api_key
@@ -280,6 +280,8 @@ def switch_API(api, state):
         time_out = 100
         if api[:4] == "qwen" and url.endswith("/v1/services/aigc/multimodal-generation/generation"):
             mod = qwen_api_switch(api)
+        elif api[:6] == "gemini":
+            mod = gemini_api_switch(api)
         else:
             mod = 'GPT4V'
         s_state = mod
@@ -558,6 +560,8 @@ with gr.Blocks(title="GPT4V captioner") as demo:
             "GPT4V",
             "qwen-vl-plus",
             "qwen-vl-max",
+            "gemini-1.5-flash-latest",
+            "gemini-1.5-pro",
             "moondream",
             "Cog-vqa",
             "Cog-chat",
