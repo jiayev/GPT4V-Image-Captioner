@@ -2,7 +2,7 @@
 
 [中文版说明](https://github.com/jiayev/GPT4V-Image-Captioner/blob/main/README-CN.md)
 
-We now have [sd-webui-GPT4V-Image-Captioner](https://github.com/SleeeepyZhou/sd-webui-GPT4V-Image-Captioner) for SD WebUI, 
+We now have [sd-webui-GPT4V-Image-Captioner](https://github.com/SleeeepyZhou/sd-webui-GPT4V-Image-Captioner) for SD WebUI,  
 Remade application version by [Godot](https://github.com/godotengine/godot), [VLMCaption-TagCraft](https://github.com/SleeeepyZhou/VLMCaption-TagCraft), is now compatible with most online APIs. 
 
 This is a multifunctional image processing toolbox built with Gradio, capable of tagging images using the GPT-4-vision or Claude 3 API, the [cogVLM](https://github.com/THUDM/CogVLM) model, [Qwen-VL](https://huggingface.co/Qwen)(Alibaba Cloud), the [Moondream](https://github.com/vikhyat/moondream) model. 
