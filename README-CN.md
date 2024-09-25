@@ -4,7 +4,8 @@
 
 [英文版说明](https://github.com/jiayev/GPT4V-Image-Captioner/blob/main/README.md)
 
-现在我们有SDwebUI插件版本[sd-webui-GPT4V-Image-Captioner](https://github.com/SleeeepyZhou/sd-webui-GPT4V-Image-Captioner)。
+现在我们有SDwebUI插件版本[sd-webui-GPT4V-Image-Captioner](https://github.com/SleeeepyZhou/sd-webui-GPT4V-Image-Captioner)。  
+使用[Godot](https://github.com/godotengine/godot)引擎制作的重制应用程序[VLMCaption-TagCraft](https://github.com/SleeeepyZhou/VLMCaption-TagCraft)，无需python，打包为单个应用程序文件，有Linux与Win双端。目前已经适配了常用的线上API。  
 
 这是一款使用 Gradio 构建，可使用GPT-4-vision API、阿里云[通义千问VL](https://modelscope.cn/organization/qwen)、[Moondream](https://github.com/vikhyat/moondream)模型 或 [CogVLM](https://github.com/THUDM/CogVLM)模型进行图像打标的多功能图像处理工具箱。特色功能包括：
 
