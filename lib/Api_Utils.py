@@ -14,6 +14,7 @@ from huggingface_hub import snapshot_download
 
 API_PATH = 'api_settings.json'
 QWEN_MOD = 'qwen-vl-plus'
+GEMINI_MOD = 'gemini-1.5-flash-latest'
 DEFAULT_GPT_MODEL = 'gpt-4o'
 DEFAULT_CLAUDE_MODEL = 'claude-3.5-sonnet'
 
@@ -47,6 +48,13 @@ def is_ali(api_url):
     
 def is_claude(api_url, model):
     if api_url.endswith("v1/messages") or "claude" in model.lower():
+        return True
+    else:
+        return False
+    
+# Gemini
+def is_gemini(api_url):
+    if "gemini" in api_url.lower():
         return True
     else:
         return False
@@ -187,7 +195,25 @@ def claude_api(image_path, prompt, api_key, api_url, model, quality=None):
     except Exception as e:
         return f"Failed to parse the API response: {e}\n{response.text}"
     
+def gemini_api_switch(mod):
+    global GEMINI_MOD
+    GEMINI_MOD = mod
+    return GEMINI_MOD
 
+def gemini_api(image_path, prompt, api_key):
+    print(f"GEMINI_MOD: {GEMINI_MOD}")
+
+    # 获取Gemini模型
+    import google.generativeai as genai
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel(GEMINI_MOD)
+
+    # 上传本地图片
+    import PIL.Image
+    image_file = PIL.Image.open(image_path)
+    response = model.generate_content([image_file, prompt])
+
+    return response.text
 
 # API使用
 def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=10, model=DEFAULT_GPT_MODEL):
@@ -199,6 +225,8 @@ def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=1
         return qwen_api(image_path, prompt, api_key)
     if is_claude(api_url, model):
         return claude_api(image_path, prompt, api_key, api_url, model, quality)
+    if is_gemini(api_url):
+        return gemini_api(image_path, prompt, api_key)
     with open(image_path, "rb") as image_file:
         image_base64 = base64.b64encode(image_file.read()).decode('utf-8')
 
@@ -264,9 +292,15 @@ def run_openai_api(image_path, prompt, api_key, api_url, quality=None, timeout=1
 def save_api_details(api_key, api_url):
     if is_ali(api_url):
         settings = {
-        'model' : QWEN_MOD,
-        'api_key': api_key,
-        'api_url': api_url
+            'model' : QWEN_MOD,
+            'api_key': api_key,
+            'api_url': api_url
+        }
+    elif is_gemini(api_url):
+        settings = {
+            'model' : GEMINI_MOD,
+            'api_key': api_key,
+            'api_url': api_url
         }
     else:
         settings = {
@@ -280,7 +314,7 @@ def save_api_details(api_key, api_url):
             json.dump(settings, f)
 
 def save_state(llm, key, url):
-    if llm[:3] == "GPT" or llm[:4] == "qwen":
+    if llm[:3] == "GPT" or llm[:4] == "qwen" or llm[:6] == "gemini":
         settings = {
             'model': llm,
             'api_key': key,
@@ -314,6 +348,13 @@ def get_api_details():
             else:
                 if is_ali(url):
                     mod = QWEN_MOD
+            
+            if mod[:6] == "gemini":
+                global GEMINI_MOD
+                GEMINI_MOD = mod
+            else:
+                if is_gemini(url):
+                    mod = GEMINI_MOD
             return mod, settings.get('api_key', ''), url
         else:
             if settings.get('api_key', '') != '':
