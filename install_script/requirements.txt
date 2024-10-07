@@ -1,11 +1,13 @@
-scipy
+scipy==1.12.0
 networkx
 wordcloud
 matplotlib
-Pillow
+Pillow==10.2.0
 tqdm
-gradio
+gradio==4.21.0
 requests
 huggingface_hub
 GPUtil
 dashscope
+google-generativeai
+pillow

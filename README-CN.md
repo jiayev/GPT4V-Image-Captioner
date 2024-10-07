@@ -4,22 +4,25 @@
 
 [英文版说明](https://github.com/jiayev/GPT4V-Image-Captioner/blob/main/README.md)
 
-现在我们有SDwebUI插件版本[sd-webui-GPT4V-Image-Captioner](https://github.com/SleeeepyZhou/sd-webui-GPT4V-Image-Captioner)。
+现在我们有SDwebUI插件版本[sd-webui-GPT4V-Image-Captioner](https://github.com/SleeeepyZhou/sd-webui-GPT4V-Image-Captioner)。  
+使用[Godot](https://github.com/godotengine/godot)引擎制作的重制应用程序[VLMCaption-TagCraft](https://github.com/SleeeepyZhou/VLMCaption-TagCraft)，无需python，打包为单个应用程序文件，有Linux与Win双端。目前已经适配了常用的线上API。  
 
-这是一款使用 Gradio 构建，可使用GPT-4-vision API或[cogVLM](https://github.com/THUDM/CogVLM)模型进行图像打标的多功能图像处理工具箱。特色功能包括：
+这是一款使用 Gradio 构建，可使用GPT-4-vision API、阿里云[通义千问VL](https://modelscope.cn/organization/qwen)、[Moondream](https://github.com/vikhyat/moondream)模型 或 [CogVLM](https://github.com/THUDM/CogVLM)模型进行图像打标的多功能图像处理工具箱。特色功能包括：
 
 - 一键安装及使用
 - 单图反推及批量打标功能
-- 云端GPT4V 或 阿里云[通义千问VL](https://modelscope.cn/organization/qwen) & 本地CogVLM双模型可选
+- 云端 GPT4V 或 Claude 3 及阿里云[通义千问VL](https://modelscope.cn/organization/qwen) & 本地 [CogVLM](https://github.com/THUDM/CogVLM) 或 [Moondream](https://github.com/vikhyat/moondream)双模型可选
 - 可视化标签分析与处理
 - 图像分桶预压缩
 - 关键词筛查及水印图像识别
+- 图像自定义识别分类
 
 开发者: [Jiaye](https://civitai.com/user/jiayev1), [LEOSAM是只兔狲](https://civitai.com/user/LEOSAM), [SleeeepyZhou](https://space.bilibili.com/360375877), [Fok](https://civitai.com/user/fok3827), GPT4。 欢迎有兴趣的朋友加入，对本项目进行进一步的完善改进。
 
 
 ![下载](https://github.com/jiayev/GPT4V-Image-Captioner/assets/16369810/90612e2b-aac1-4368-84d6-482bb660f5aa)
 
+要使用Claude 3，只需将API密钥和URL替换为Claude 3的API密钥和URL (/v1/messages)，并将模型名称更改为"claude-3-opus"（或sonnet）。
 
 # 安装和启动指南
 
