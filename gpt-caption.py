@@ -6,6 +6,7 @@ import threading
 
 import concurrent.futures
 from tqdm import tqdm
+from PIL import Image
 
 import subprocess
 import time
@@ -128,6 +129,41 @@ def handle_file(image_path, target_path, file_handling_mode):
         print(f"An exception occurred while handling the file {image_path}: {e}")
         return f"Error handling file {image_path}: {e}"
     return
+
+def segment_image(input_path, output_dir, rows, cols):
+    # Open the image
+    with Image.open(input_path) as img:
+        # Get the width and height of the image
+        width, height = img.size
+        
+        # Calculate the width and height of each segment
+        segment_width = width // cols
+        segment_height = height // rows
+        
+        # Get the base name of the input file (without extension)
+        base_name = os.path.splitext(os.path.basename(input_path))[0]
+        
+        # Create the output directory if it doesn't exist
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Segment the image
+        for i in range(rows):
+            for j in range(cols):
+                # Calculate the bounding box for this segment
+                left = j * segment_width
+                upper = i * segment_height
+                right = left + segment_width
+                lower = upper + segment_height
+                
+                # Crop the image
+                segment = img.crop((left, upper, right, lower))
+                
+                # Save the segment
+                segment_filename = f"{base_name}-{i*cols+j+1:03d}.png"
+                segment_path = os.path.join(output_dir, segment_filename)
+                segment.save(segment_path)
+        
+    return f"Image segmented into {rows*cols} parts and saved in {output_dir}"
 
 def process_batch_watermark_detection(api_key, prompt, api_url, image_dir, detect_file_handling_mode, quality, timeout,
                                       watermark_dir):
@@ -460,6 +496,28 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                     rule_type = gr.Dropdown(label="Rule / 规则类型", choices=["","Involve / 包含", "Exclude / 不包含"], value="")
                     rule_input = gr.Textbox(label="Custom / 自定义", placeholder="Enter the words you need to filter / 输入你需要筛选的词")
                     rule_inputs.extend([rule_type, rule_input])
+
+        with gr.Tab("Image Segmentation / 图片分割"):
+            gr.Markdown("""
+            This function allows you to segment an image into multiple parts. The new images will be saved as 'original_name-001.png', 'original_name-002.png', etc.
+            
+            此功能允许您将一张图片分割成多个部分。新图片将以"原图片名-001.png"、"原图片名-002.png"等形式保存。
+            """)
+            with gr.Row():
+                input_image = gr.Image(type="filepath", label="Input Image / 输入图片")
+                output_dir = gr.Textbox(label="Output Directory / 输出目录", placeholder="Enter the output directory path / 输入输出目录路径")
+            with gr.Row():
+                rows = gr.Slider(minimum=1, maximum=10, step=1, value=2, label="Number of Rows / 行数")
+                cols = gr.Slider(minimum=1, maximum=10, step=1, value=2, label="Number of Columns / 列数")
+            with gr.Row():
+                segment_button = gr.Button("Segment Image / 分割图片", variant='primary')
+            segmentation_output = gr.Textbox(label="Segmentation Output / 分割输出")
+        
+            segment_button.click(
+                segment_image,
+                inputs=[input_image, output_dir, rows, cols],
+                outputs=segmentation_output
+            )
 
     def caption_image(api_key, api_url, prompt, image, quality, timeout):
         if image:
