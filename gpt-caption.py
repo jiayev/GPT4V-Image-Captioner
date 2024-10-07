@@ -512,27 +512,26 @@ with gr.Blocks(title="GPT4V captioner") as demo:
                     rule_input = gr.Textbox(label="Custom / 自定义", placeholder="Enter the words you need to filter / 输入你需要筛选的词")
                     rule_inputs.extend([rule_type, rule_input])
 
-            with gr.Tab("Image Segmentation / 图片分割"):
-                gr.Markdown("""
-                This function allows you to segment all images in a folder into multiple parts. The new images will be saved in subfolders named after the original images, with filenames like 'original_name-001.png', 'original_name-002.png', etc.
-                
-                此功能允许您将一个文件夹中的所有图片分割成多个部分。新图片将保存在以原图片名命名的子文件夹中，文件名形如"原图片名-001.png"、"原图片名-002.png"等。
-                """)
-                with gr.Row():
-                    input_folder = gr.Textbox(label="Input Folder / 输入文件夹", placeholder="Enter the path of the folder containing images / 输入包含图片的文件夹路径")
-                    output_folder = gr.Textbox(label="Output Folder / 输出文件夹", placeholder="Enter the path for the output folder / 输入输出文件夹路径")
-                with gr.Row():
-                    rows = gr.Slider(minimum=1, maximum=10, step=1, value=2, label="Number of Rows / 行数")
-                    cols = gr.Slider(minimum=1, maximum=10, step=1, value=2, label="Number of Columns / 列数")
-                with gr.Row():
-                    segment_button = gr.Button("Segment Images / 分割图片", variant='primary')
+        with gr.Tab("Image Segmentation / 图片分割"):
+            gr.Markdown("""
+            This function allows you to segment all images in a folder into multiple parts. The new images will be saved in subfolders named after the original images, with filenames like 'original_name-001.png', 'original_name-002.png', etc.
+            
+            此功能允许您将一个文件夹中的所有图片分割成多个部分。新图片将保存在以原图片名命名的子文件夹中，文件名形如"原图片名-001.png"、"原图片名-002.png"等。                """)
+            with gr.Row():
+                  input_folder = gr.Textbox(label="Input Folder / 输入文件夹", placeholder="Enter the path of the folder containing images / 输入包含图片的文件夹路径")
+                output_folder = gr.Textbox(label="Output Folder / 输出文件夹", placeholder="Enter the path for the output folder / 输入输出文件夹路径")
+            with gr.Row():
+                rows = gr.Slider(minimum=1, maximum=10, step=1, value=2, label="Number of Rows / 行数")
+                cols = gr.Slider(minimum=1, maximum=10, step=1, value=2, label="Number of Columns / 列数")
+            with gr.Row():
+                segment_button = gr.Button("Segment Images / 分割图片", variant='primary')
                 segmentation_output = gr.Textbox(label="Segmentation Output / 分割输出")
             
-                segment_button.click(
-                    segment_images_in_folder,
-                    inputs=[input_folder, output_folder, rows, cols],
-                    outputs=segmentation_output
-                )
+            segment_button.click(
+                segment_images_in_folder,
+                inputs=[input_folder, output_folder, rows, cols],
+                outputs=segmentation_output
+            )
 
     def caption_image(api_key, api_url, prompt, image, quality, timeout):
         if image:
