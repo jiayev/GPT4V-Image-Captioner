@@ -1,8 +1,8 @@
 ﻿import importlib
-import GPUtil
+import GPUstatus
 
 def check_memory():
-    gpus = GPUtil.getGPUs()
+    gpus = GPUstatus.getGPUs()
     for gpu in gpus:
         if gpu.memoryTotal > 12000:
             return ""

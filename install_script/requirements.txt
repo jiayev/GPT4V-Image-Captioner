@@ -7,7 +7,7 @@ tqdm
 gradio==4.21.0
 requests
 huggingface_hub
-GPUtil
+graphicstatus==1.1.0
 dashscope
 google-generativeai
 pillow
