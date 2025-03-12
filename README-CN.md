@@ -17,7 +17,7 @@
 - 关键词筛查及水印图像识别
 - 图像自定义识别分类
 
-开发者: [Jiaye](https://civitai.com/user/jiayev1), [LEOSAM是只兔狲](https://civitai.com/user/LEOSAM), [SleeeepyZhou](https://space.bilibili.com/360375877), [Fok](https://civitai.com/user/fok3827), GPT4。 欢迎有兴趣的朋友加入，对本项目进行进一步的完善改进。
+开发者: [Jiaye](https://civitai.com/user/jiayev1)， [LEOSAM是只兔狲](https://civitai.com/user/LEOSAM)， [SleeeepyZhou](https://space.bilibili.com/360375877)， [Fok](https://civitai.com/user/fok3827), GPT4。 欢迎有兴趣的朋友加入，对本项目进行进一步的完善改进。
 
 
 ![下载](https://github.com/jiayev/GPT4V-Image-Captioner/assets/16369810/90612e2b-aac1-4368-84d6-482bb660f5aa)
@@ -108,6 +108,15 @@
 
 9. 完成上述步骤后，可通过双击 `Start_windows.bat` 文件来启动 GPT4V-Image-Captioner。
 
+## 使用注意事项
+每个服务商提供的api路径、接口、返回格式都不相同，需要按照你服务商的文档填写base_url地址，我提供以下四种个参考格式：
+```
+1. https://你的base_url/v1/chat/completions
+2. https://你的base_url/chat/completions
+3. https://你的base_url/v1
+4. https://你的base_url
+```
+根据你的服务商文档，判断是否填写/v1，/chat/completions则是必须填写的
 
 ## 更新内容
 
